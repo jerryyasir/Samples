@@ -203,10 +203,21 @@ foreach ($team in $Data) {
 		$funSettings.Add("allowGiphy", $true)
 		$funSettings.Add("giphyContentRating", $true)
 		
+		#Create Team using Empty Template
 		$TeamCreationUrl = "$GraphURL/groups/$GroupId/team"
 		$body = [ordered]@{
 		}
 		$bodyJSON = $body | ConvertTo-Json
+		
+		#Create Team using Any Template
+		#https://docs.microsoft.com/en-us/MicrosoftTeams/get-started-with-teams-templates
+		$TeamCreationUrl = "$GraphURL/teams"
+		#Teams Template
+		$body = [ordered]@{
+			"template@odata.bind" = "https://graph.microsoft.com/beta/teamsTemplates('educationClass')"
+			"displayName"         = $TeamName
+			"description"         = $Description
+		}
 		
 		$TeamCreationResponse = $null
 		$TeamCreationResponse = Invoke-RestMethod -Uri $TeamCreationUrl -Headers @{Authorization = "Bearer $token" } -Body $bodyJSON -Method Put -ContentType "application/json" -Verbose
