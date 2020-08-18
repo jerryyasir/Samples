@@ -135,7 +135,6 @@ foreach ($team in $Data) {
 		$body = [ordered]@{
 			"template@odata.bind" = "https://graph.microsoft.com/beta/teamsTemplates('educationClass')"
 			displayName           = $TeamName
-			Classification        = $Classification
 			description           = $Description
 			"owners@odata.bind"   = $arrayOwnersInREST
 		}
