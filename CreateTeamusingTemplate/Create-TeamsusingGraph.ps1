@@ -1,4 +1,4 @@
-﻿Clear-Host
+Clear-Host
 
 #$scopes = $null
 $scopes = @("Group.Read.All", "Group.ReadWrite.All", "User.ReadWrite.All", "Directory.Read.All", "Reports.Read.All")
@@ -38,10 +38,11 @@ foreach ($team in $Data) {
 	$Description = $team.Description 
 	$Classification = $team.Classification
 	$TeamChannels = $team.Channels
+    $SecondryOwners = $team.SecondryOwners
 	$TeamMembers = $team.Members
-	$TeamOwners = $team.Owner
+	$TeamOwners = $team.'Primary Owner'
 	$DeleteExistingTeam = $team.DeleteExistingTeam
-  
+    $Message = $team.Message
 	$getTeamFromGraphUrl = "$GraphURL/groups?`$filter=displayName eq '" + $TeamName + "'"
 	$teamAlreadyExistResponse = Invoke-RestMethod -Uri $getTeamFromGraphUrl -Headers @{Authorization = "Bearer $token" }
 	if ($teamAlreadyExistResponse.value.Count -gt 0) {
@@ -87,7 +88,23 @@ foreach ($team in $Data) {
 			}
 		}
 		Catch {
-			Write-Host "There is issue with Channel settings in CSV, Check and Fix:. $teamchannels"
+			Write-Host "There is issue with Members in CSV, Check and Fix:. $teamchannels"
+		}
+
+        $arraySecondryOwners = New-Object System.Collections.ArrayList
+		try {
+			$splitSecondryOwners = $SecondryOwners -split "#" 
+			if ($splitSecondryOwners) {
+				for ($i = 0; $i -le ($splitSecondryOwners.count - 1) ; $i++) {
+					$UserUserPrincipalName = $splitSecondryOwners[$i]
+					if ($UserUserPrincipalName -ne $CurrentUser) {
+						$arraySecondryOwners.Add($UserUserPrincipalName)
+					}
+				}
+			}
+		}
+		Catch {
+			Write-Host "There is issue with Secondry Owners in CSV, Check and Fix:. $teamchannels"
 		}
 
 		$arrayOwners = New-Object System.Collections.ArrayList
@@ -101,22 +118,32 @@ foreach ($team in $Data) {
 
 		$arrayOwnersInREST = New-Object System.Collections.ArrayList
 		$arrayMembersInREST = New-Object System.Collections.ArrayList
+        $arraySecondryOwnersInREST = New-Object System.Collections.ArrayList
 		foreach ($Member in $arrayMembers) {
-			$FindMemberUrl = "https://graph.microsoft.com/v1.0/users/" + $Member + "?`$Select=Id"
+			$FindMemberUrl = $graphV1Endpoint + "/users/" + $Member + "?`$Select=Id"
 			$Response = Invoke-RestMethod -Uri $FindMemberUrl -Headers @{Authorization = "Bearer $token" } -Method Get -ContentType "application/json" -Verbose
 			if ($Response) {
 				$Response.id
-				$MembersUrl = "https://graph.microsoft.com/v1.0/Users/$($Response.id)"
+				$MembersUrl = "$graphV1Endpoint/users/$($Response.id)"
 				$arrayMembersInREST.Add($MembersUrl)
 			}
 		}
 		foreach ($owner in $arrayOwners) {
-			$FindOwnerUrl = "https://graph.microsoft.com/v1.0/users/" + $owner + "?`$Select=Id"
+			$FindOwnerUrl = "$graphV1Endpoint/users/" + $owner + "?`$Select=Id"
 			$Response = Invoke-RestMethod -Uri $FindOwnerUrl -Headers @{Authorization = "Bearer $token" } -Method Get -ContentType "application/json" -Verbose
 			if ($Response) {
 				$Response.id
-				$OwnerUrl = "https://graph.microsoft.com/v1.0/Users/$($Response.id)"
+				$OwnerUrl = "$graphV1Endpoint/users/$($Response.id)"
 				$arrayOwnersInREST.Add($OwnerUrl)
+			}
+		}
+        foreach ($owner in $arraySecondryOwners) {
+			$FindOwnerUrl = "$graphV1Endpoint/users/" + $owner + "?`$Select=Id"
+			$Response = Invoke-RestMethod -Uri $FindOwnerUrl -Headers @{Authorization = "Bearer $token" } -Method Get -ContentType "application/json" -Verbose
+			if ($Response) {
+				$Response.id
+				$aSecondryOwnerUrl = "$graphV1Endpoint/users/$($Response.id)"
+				$arraySecondryOwnersInREST.Add($aSecondryOwnerUrl)
 			}
 		}
 
@@ -142,7 +169,7 @@ foreach ($team in $Data) {
 		$bodyJSON = $body | ConvertTo-Json
 		$TeamCreationResponse = $null
 		Invoke-RestMethod -Uri $TeamCreationUrl -Headers @{Authorization = "Bearer $token" } -Body $bodyJSON -Method Post -ContentType "application/json" -Verbose
-		Start-Sleep -Seconds 5
+		Start-Sleep -Seconds 2
 
 		$getTeamFromGraphUrl = "$GraphURL/groups?`$filter=displayName eq '" + $TeamName + "'"
 		$TeamCreationResponse = Invoke-RestMethod -Uri $getTeamFromGraphUrl -Headers @{Authorization = "Bearer $token" } -Method Get -ContentType "application/json" -Verbose
@@ -150,13 +177,15 @@ foreach ($team in $Data) {
 		if ($TeamCreationResponse -eq $null) {
 			$Stoploop = $false
 			do {
-				$TeamCreationResponse = Invoke-RestMethod -Uri $getTeamFromGraphUrl -Headers @{Authorization = "Bearer $token" } -Method Get -Verbose  
+                Write-Host "Retrying Teams Creation..."
+				$TeamCreationResponse = Invoke-RestMethod -Uri $getTeamFromGraphUrl -Headers @{Authorization = "Bearer $token" } -Method Get -ContentType "application/json" -Verbose
 				if ($TeamCreationResponse) {
 					foreach ($val in $TeamCreationResponse.value) {
 						$TeamID = $val.Id
 					}
 					$Stoploop = $true
 				}
+                Start-Sleep -Seconds 2
 			}
 			While ($Stoploop -eq $false)
 		}
@@ -217,7 +246,7 @@ foreach ($team in $Data) {
 		$ChannelID = $GeneralChannelResponse.value[0].id
 		$GeneralChannelMessageUrl = "$TeamsChannelsUrl/$ChannelID/messages"
 			
-		$Message = "Welcome to Microsoft Teams from Jerry Yasir"
+		#$Message = "Welcome to Microsoft Teams from Jerry Yasir"
 		$MessageBody = @{}
 		$MessageBody.Add("content", $Message)
 		
@@ -273,13 +302,26 @@ foreach ($team in $Data) {
 		# Invoke-RestMethod -Uri $TeamsMembersUrl -Headers @{Authorization = "Bearer $token" } -Body $bodyJSON -Method Post -ContentType "application/json"
 		# }
 
+        
+
 		$TeamsMembersUrl = $graphV1Endpoint + "/groups/$TeamId"
 		$body = @{
 			"members@odata.bind" = $arrayMembersInREST
 		}
 		$bodyJSON = $body | ConvertTo-Json
 		Invoke-RestMethod -Uri $TeamsMembersUrl -Headers @{Authorization = "Bearer $token" } -Body $bodyJSON -Method Patch -ContentType "application/json"
+
+		$TeamsMembersUrl = $TeamsMembersUrl + "/owners/`$ref"
+		foreach($secOwner in $arraySecondryOwnersInREST)
+        {
+            $body = @{
+                "@odata.id" = $secOwner 
+            }
+            $bodyJSON = $body | ConvertTo-Json
+    		Invoke-RestMethod -Uri $TeamsMembersUrl -Headers @{Authorization = "Bearer $token" } -Body $bodyJSON -Method Post -ContentType "application/json" -Verbose
+		}
+		
 		
 	}
-	Write-Host "Team Creation Process has been Completed." -ForegroundColor Green
+	Write-Host "Team $($TeamName) Created Successfully. Moving to Next Team" -ForegroundColor Green
 }
