@@ -1,0 +1,39 @@
+DECLARE @cols AS NVARCHAR(MAX),
+        @query AS NVARCHAR(MAX);
+
+-- Get the maximum number of addresses per customer
+DECLARE @maxAddresses INT;
+SELECT @maxAddresses = MAX(AddressCount)
+FROM (
+    SELECT CustomerID, COUNT(*) AS AddressCount
+    FROM Addresses
+    GROUP BY CustomerID
+) AS AddressCounts;
+
+-- Construct the column headers
+SELECT @cols = STUFF((
+    SELECT ', ' + QUOTENAME('City' + CAST(number AS NVARCHAR)) + ', ' + QUOTENAME('Country' + CAST(number AS NVARCHAR))
+    FROM master..spt_values
+    WHERE type = 'P' AND number BETWEEN 1 AND @maxAddresses
+    FOR XML PATH(''), TYPE
+).value('.', 'NVARCHAR(MAX)'), 1, 2, '');
+
+-- Construct the dynamic SQL query
+SET @query = 'SELECT CustomerID, ' + @cols + '
+              FROM (
+                  SELECT CustomerID,
+                         City,
+                         Country,
+                         ''City'' + CAST(ROW_NUMBER() OVER (PARTITION BY CustomerID ORDER BY City) AS NVARCHAR) AS CityColumn,
+                         ''Country'' + CAST(ROW_NUMBER() OVER (PARTITION BY CustomerID ORDER BY City) AS NVARCHAR) AS CountryColumn
+                  FROM Addresses
+              ) AS SourceTable
+              PIVOT (
+                  MAX(City) FOR CityColumn IN (' + REPLACE(@cols, 'Country', 'City') + ')
+              ) AS PivotTableCity
+              PIVOT (
+                  MAX(Country) FOR CountryColumn IN (' + REPLACE(@cols, 'City', 'Country') + ')
+              ) AS PivotTableCountry';
+
+-- Execute the dynamic SQL query
+EXEC sp_executesql @query;
