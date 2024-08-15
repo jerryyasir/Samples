@@ -1,0 +1,38 @@
+-- Combine Customers and CustomerAddresses Tables
+WITH AddressRanked AS (
+    SELECT 
+        c.CustomerID,
+        c.Name,
+        c.PhoneNumber,
+        a.City,
+        a.State,
+        a.Country,
+        ROW_NUMBER() OVER (PARTITION BY c.CustomerID ORDER BY a.City) AS AddressRank
+    FROM 
+        Customers c
+    JOIN 
+        CustomerAddresses a ON c.CustomerID = a.CustomerID
+)
+SELECT 
+    CustomerID,
+    Name,
+    PhoneNumber,
+   MAX(CASE WHEN AddressRank = 1 THEN City END) AS City,
+    MAX(CASE WHEN AddressRank = 1 THEN State END) AS State,
+    MAX(CASE WHEN AddressRank = 1 THEN Country END) AS Country,
+    MAX(CASE WHEN AddressRank = 2 THEN City END) AS City1,
+    MAX(CASE WHEN AddressRank = 2 THEN State END) AS State1,
+    MAX(CASE WHEN AddressRank = 2 THEN Country END) AS Country1,
+    MAX(CASE WHEN AddressRank = 3 THEN City END) AS City2,
+    MAX(CASE WHEN AddressRank = 3 THEN State END) AS State2,
+    MAX(CASE WHEN AddressRank = 3 THEN Country END) AS Country2,
+    MAX(CASE WHEN AddressRank = 4 THEN City END) AS City3,
+    MAX(CASE WHEN AddressRank = 4 THEN State END) AS State3,
+    MAX(CASE WHEN AddressRank = 4 THEN Country END) AS Country3,
+    MAX(CASE WHEN AddressRank = 5 THEN City END) AS City4,
+    MAX(CASE WHEN AddressRank = 5 THEN State END) AS State4,
+    MAX(CASE WHEN AddressRank = 5 THEN Country END) AS Country4
+FROM 
+    AddressRanked
+GROUP BY 
+    CustomerID, Name, PhoneNumber;
