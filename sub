@@ -1,0 +1,10 @@
+SELECT 
+    NoteID, 
+    WVCCID, 
+    SUBSTRING(CallNotes, 
+        CHARINDEX('WVPM Response Note:', CallNotes), 
+        CHARINDEX('WVPM Note End', CallNotes) - CHARINDEX('WVPM Response Note:', CallNotes) + LEN('WVPM Note End')
+    ) AS ExtractedText
+FROM CallNotes
+WHERE CHARINDEX('WVPM Response Note:', CallNotes) > 0
+  AND CHARINDEX('WVPM Note End', CallNotes) > 0;
