@@ -8,3 +8,38 @@ SELECT
 FROM CallNotes
 WHERE CHARINDEX('WVPM Response Note:', CallNotes) > 0
   AND CHARINDEX('WVPM Note End', CallNotes) > 0;
+
+
+
+WITH RecursiveCTE AS (
+    SELECT 
+        NoteID,
+        WVCCID,
+        CallNotes,
+        CHARINDEX('WVPM Response Note:', CallNotes) AS StartPos,
+        CHARINDEX('WVPM Note End', CallNotes) AS EndPos
+    FROM CallNotes
+    WHERE CHARINDEX('WVPM Response Note:', CallNotes) > 0
+      AND CHARINDEX('WVPM Note End', CallNotes) > 0
+
+    UNION ALL
+
+    SELECT 
+        NoteID,
+        WVCCID,
+        CallNotes,
+        CHARINDEX('WVPM Response Note:', CallNotes, EndPos + LEN('WVPM Note End')),
+        CHARINDEX('WVPM Note End', CallNotes, CHARINDEX('WVPM Response Note:', CallNotes, EndPos + LEN('WVPM Note End')))
+    FROM RecursiveCTE
+    WHERE CHARINDEX('WVPM Response Note:', CallNotes, EndPos + LEN('WVPM Note End')) > 0
+      AND CHARINDEX('WVPM Note End', CallNotes, CHARINDEX('WVPM Response Note:', CallNotes, EndPos + LEN('WVPM Note End'))) > 0
+)
+SELECT 
+    NoteID,
+    WVCCID,
+    SUBSTRING(CallNotes, 
+        StartPos + LEN('WVPM Response Note:') + 1, 
+        EndPos - StartPos - LEN('WVPM Response Note:') - 1
+    ) AS ExtractedText
+FROM RecursiveCTE
+ORDER BY NoteID, StartPos;
