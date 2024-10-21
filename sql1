@@ -1,0 +1,21 @@
+DECLARE @BatchSize INT = 10;
+DECLARE @Iteration INT = 1;
+DECLARE @TotalRecords INT = (SELECT COUNT(*) FROM YourTable);
+
+WHILE @Iteration <= (@TotalRecords / @BatchSize)
+BEGIN
+    -- Select the next batch of records
+    WITH Batch AS (
+        SELECT TOP (@BatchSize) *
+        FROM YourTable
+        ORDER BY [YourPrimaryKey]
+    )
+    SELECT * FROM Batch;
+
+    -- Delete the selected batch of records
+    DELETE FROM YourTable
+    WHERE [YourPrimaryKey] IN (SELECT [YourPrimaryKey] FROM Batch);
+
+    -- Increase iteration
+    SET @Iteration = @Iteration + 1;
+END
