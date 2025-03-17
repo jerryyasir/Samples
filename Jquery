@@ -34,3 +34,18 @@ getClassAsync().then((className) => {
 
 
 <table aria-relevant="additions" class="table table-striped table-fluid"><thead><tr><th scope="col" aria-readonly="true" style="width:88.23529411764706%;" class="sort-enabled sort sort-asc" aria-sort="ascending"><a href="#" role="button" aria-label="Name" tabindex="0">Name <span class="fa fa-arrow-up" aria-hidden="true"></span><span class="sr-only sort-hint">. sort ascending</span></a></th><th scope="col" aria-readonly="true" style="width: 11.7647%; position: initial;" class="sort-disabled" aria-label="Actions" data-th="<span class='sr-only'>Actions</span>"><span class="sr-only">Actions</span></th></tr></thead></table>
+
+
+$(document).ready(function() {
+    // Run asynchronously
+    setTimeout(function() {
+        $('span.sr-only').each(function() {
+            if ($(this).text().trim() === 'Actions') {
+                $(this).css({
+                    'color': 'red',
+                    'font-weight': 'bold'
+                });
+            }
+        });
+    }, 100); // Delay in milliseconds (adjust as needed)
+});
