@@ -1,0 +1,10 @@
+// Find the span under the second <th> with the class "sort-disabled" and text "Actions"
+var className = $("th.sort-disabled")
+    .eq(1) // Select the second <th> (0-based index)
+    .filter(function() {
+        return $(this).text().trim() === "Actions"; // Ensure the text is "Actions"
+    })
+    .find("span") // Find the <span> under this <th>
+    .attr("class"); // Get the class attribute of the span
+
+console.log(className); // Logs the class name(s) of the span
