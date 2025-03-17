@@ -8,3 +8,26 @@ var className = $("th.sort-disabled")
     .attr("class"); // Get the class attribute of the span
 
 console.log(className); // Logs the class name(s) of the span
+
+
+
+async function getClassAsync() {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            // Locate the class asynchronously
+            var className = $("th.sort-disabled")
+                .eq(1) // Select the second <th> (0-based index)
+                .filter(function() {
+                    return $(this).text().trim() === "Actions"; // Ensure the text is "Actions"
+                })
+                .find("span") // Find the <span> under this <th>
+                .attr("class"); // Get the class attribute of the span
+            resolve(className);
+        }, 0); // Simulate async operation with a delay
+    });
+}
+
+// Usage example
+getClassAsync().then((className) => {
+    console.log("Class name:", className);
+});
