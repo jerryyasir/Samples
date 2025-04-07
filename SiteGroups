@@ -1,0 +1,32 @@
+#CORRECT CERT
+$SiteUrl = 'https://sharepointmvp.sharepoint.com/sites/VideoDownload'
+
+Connect-PnPOnline -Url $SiteUrl -UseWebLogin
+$Site = Get-PnPSite
+$Context = Get-PnPContext
+$Webs = Get-PnPSubWeb -Recurse -IncludeRootWeb -Includes Title, HasUniqueRoleAssignments, ServerRelativeUrl
+$Unique = $Webs | Where-Object { $_.HasUniqueRoleAssignments -eq $true } 
+$SiteGroup = $Site.RootWeb.SiteGroups
+$Context.Load($SiteGroup);
+$Context.ExecuteQuery()
+
+$SiteObjects = @()
+
+foreach($Web in $Unique){
+    $Web.ServerRelativeUrl
+    $spoWeb = $Site.OpenWeb($Web.ServerRelativeUrl)
+    $Context.Load($spoWeb);
+    $Context.ExecuteQuery()
+    $Group = $spoWeb.AssociatedOwnerGroup
+    $Context.Load($Group);
+    $Context.ExecuteQuery()
+
+    $SiteAdminGroup = $($Web.Title) + " Admins"
+    $AdminGroup = $SiteGroup | Where-Object { $_.Title -eq $SiteAdminGroup }
+
+    $SiteObjects += [PSCustomObject][ordered]@{
+        SiteUrl = "$($SiteUrl)$($Web.ServerRelativeUrl)"
+        OwnerGroup  = $Group.Title
+        AdminGroup = $AdminGroup.Title
+    }
+}
