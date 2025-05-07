@@ -1,0 +1,331 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script>
+  function AuthenticateRequest() {
+    // Flow url copied in previous section.
+    var _url = "/_api/cloudflow/v1.0/trigger/3caa5ee1-b024-f011-8c4e-0022482c4074";
+
+    var name = document.getElementById("txtname").value;
+    var pin = parseInt(document.getElementById("txtPin").value);
+    var DateOfBirth = document.getElementById("txtDateOfBirth").value;
+    //alert(name + pin + subject);
+
+    document.getElementById("loadingLogin").style.display = "inline-block";
+
+    var data = {};
+    data["Name"] = name;
+    data["Pin"] = pin;
+    //data["Subject"] = subject;
+    //data["Message"] = feedbackMessage;
+    var payload = {};
+    payload.eventData = JSON.stringify(data);
+    shell
+      .ajaxSafePost({
+        type: "POST",
+        url: _url,
+        data: payload
+      })
+      .done(function (response) {
+        const result = JSON.parse(response);
+        var resultContact = result["contact"];
+        //alert(resultContact);
+        if (resultContact !== "" || resultContact !== undefined || resultContact !== 'undefined') {
+
+          document.getElementById("loginSection").style.display = "none";
+          document.getElementById("dynamicSection").style.display = "block";
+          document.getElementById("userLastName").innerText = name;
+          document.getElementById("userFacility").innerText = "Veterans Volunteer Center"; // Set dynamically
+          document.getElementById("hiddenValue").value = resultContact;
+          GetHistory();
+          // Hide loading indicator
+          document.getElementById("loadingLogin").style.display = "none";
+
+        }
+      })
+      .catch(error => {
+        console.error('Error calling Power Automate flow:', error);
+        alert("Please enter valid information.");
+        document.getElementById("loadingLogin").style.display = "none"; // 
+      });
+
+    return false; // Prevent form submission for demonstration purposes
+  }
+  function submitAssignment() {
+
+    var _url = "/_api/cloudflow/v1.0/trigger/1f7cb41e-5f28-f011-8c4e-0022482c4074";
+    let selectedAssignment = document.getElementById("assignment").value;
+    let hours = document.getElementById("hours").value;
+    let description = document.getElementById("description").value;
+    let contactId = document.getElementById("hiddenValue").value;
+    console.log(selectedAssignment + hours + description);
+    document.getElementById("loadingSubmit").style.display = "inline-block";
+
+    if (selectedAssignment && hours && description) {
+      var data = {};
+      data["AssignmentId"] = selectedAssignment;
+      data["Hours"] = parseInt(hours);
+      data["ContactId"] = contactId;
+      data["Description"] = description;
+
+      var payload = {};
+      payload.eventData = JSON.stringify(data);
+
+      shell
+        .ajaxSafePost({
+          type: "POST",
+          url: _url,
+          data: payload
+        })
+        .done(function (response) {
+          const resultOfSubmission = JSON.parse(response);
+          const base64String = resultOfSubmission["pdf"];
+
+          if (base64String !== "" || base64String !== undefined || base64String !== 'undefined') {
+
+            const byteCharacters = atob(base64String);
+            const byteNumbers = new Uint8Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+
+            // Create a Blob from the byte array
+            const blob = new Blob([byteNumbers], { type: "application/pdf" });
+            // Generate a URL for the Blob
+            const url = URL.createObjectURL(blob);
+            // Display the PDF in an iframe
+            document.getElementById("loadingSubmit").style.display = "none";
+            document.getElementById("latestRequestTab").click(); // Switch to "View Past Requests" tab
+            document.getElementById("pdfViewer").src = url;
+            document.getElementById("pdfViewer").style.display = "block";
+            var pdfModal = new bootstrap.Modal(document.getElementById("pdfModal"));
+            pdfModal.show();
+            document.getElementById("pdfModal").addEventListener("shown.bs.modal", function () {
+            setTimeout(() => {
+                    let pdfUrl = document.getElementById("pdfViewer").getAttribute("src");
+
+                    if (pdfUrl) {
+                        let newWindow = window.open(pdfUrl);
+                        newWindow.onload = function () {
+                            newWindow.print();
+                            
+                        };
+                    } else {
+                        console.error("PDF source not found.");
+                    }
+                }, 1000); // Small delay to ensure content is loaded
+            });
+
+          }
+        })
+        .catch(error => {
+          console.error('Error calling Power Automate flow:', error);
+          alert("Unable to Submit.  Please refresh and Try again.");
+          document.getElementById("loadingSubmit").style.display = "none"; // 
+        });
+    } else {
+      alert("Please fill in all fields.");
+    }
+  }
+
+  function printPDF() {
+    let pdfUrl = document.getElementById("pdfViewer").getAttribute("src");
+    if (pdfUrl) {
+        let newWindow = window.open(pdfUrl);
+        newWindow.onload = function () {
+            newWindow.print();
+        };
+    } else {
+        console.error("PDF source not found.");
+    }
+
+  }
+
+
+  function GetHistory() {
+    // Flow url copied in previous section.
+    var _url = "/_api/cloudflow/v1.0/trigger/fd06a1d0-8d28-f011-8c4e-0022482c4074";
+
+    var hiddenContactId = document.getElementById("hiddenValue").value;
+    
+    //alert(name + pin + subject);
+  var data = {};
+    data["ContactId"] = hiddenContactId;
+    var payload = {};
+    payload.eventData = JSON.stringify(data);
+    shell
+      .ajaxSafePost({
+        type: "POST",
+        url: _url,
+        data: payload
+      })
+      .done(function (response) {
+        const result = JSON.parse(response);
+        const pastAssignments = result["assignments"];
+        if (pastAssignments !== "" || pastAssignments !== undefined || pastAssignments !== 'undefined') {
+          var pastAssignmentsArray =JSON.parse(pastAssignments);
+          let recordsTable = document.getElementById("recordsTable");
+          pastAssignmentsArray.forEach(record => {
+              let row = `<tr>
+                  <td>${record.Assignment}</td>
+                  <td>${record.Description}</td>
+                  <td>${record.Hours}</td>
+                  <td>${record.CreatedOn}</td>
+              </tr>`;
+              recordsTable.innerHTML += row;
+          });          
+        }
+      })
+      .catch(error => {
+        console.error('Error calling Power Automate flow in GetHistory:', error);
+        document.getElementById("loadingLogin").style.display = "none"; // 
+      });
+
+    return false; // Prevent form submission for demonstration purposes
+  }
+  function printLoadedPDF() {
+    // Get the PDF URL from the embed control
+    const pdfUrl = document.getElementById("pdfViewer").src;
+
+    // Open the PDF in a new tab
+    const newTab = window.open(pdfUrl, "_blank");
+
+    if (newTab) {
+      newTab.onload = function () {
+        newTab.print();  // Automatically trigger print
+      };
+    } else {
+      alert("Pop-up blocker prevented the print window from opening.");
+    }
+  }
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="row sectionBlockLayout text-start"
+  style="display: flex; flex-wrap: wrap; margin: 0px; min-height: auto; padding: 8px;">
+  <div class="container" style="display: flex; flex-wrap: wrap;">
+    <input type="hidden" id="hiddenValue" name="contactId" value="">
+    <div class="container mt-6">
+      <!-- Login Section -->
+      <div id="loginSection" class="card mx-auto mt-5 p-4 shadow-sm" style="max-width: 400px; border-radius: 10px;">
+        <h2 class="mb-4 text-center text-primary">Verify and Add Volunteer Hours</h2>
+        <p class="text-center text-muted">Please enter the verification information created on the CDCEP Portal if you
+          have already
+          created an account.</p>
+
+        <p class="text-center fw-bold">OR</p>
+
+        <p class="text-center">
+          <a href="https://www.cdceportal.va.gov/" target="_blank" class="text-primary fw-bold">Click to create a new
+            Account</a>
+        </p>
+
+        <form onsubmit="event.preventDefault(); AuthenticateRequest();">
+          <div class="mb-3">
+            <label for="lastName" class="form-label">Last Name:</label>
+            <input type="text" id="txtname" class="form-control border-primary" placeholder="Enter last name" required>
+          </div>
+          <div class="mb-3">
+            <label for="dob" class="form-label">Date of Birth:</label>
+            <input type="date" id="txtDateOfBirth" class="form-control border-primary" required>
+          </div>
+          <div class="mb-3">
+            <label for="pin" class="form-label">4-Digit Pin Code:</label>
+            <input type="password" id="txtPin" class="form-control border-primary" maxlength="4" placeholder="****"
+              required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 rounded-pill">
+            Verify <span id="loadingLogin" class="spinner-border spinner-border-sm ms-2" style="display: none;"></span>
+          </button>
+
+        </form>
+      </div>
+      <!-- Assignment Section -->
+      <div id="dynamicSection" class="card p-4 shadow-sm mt-4" style="display: none;">
+        <h2 class="mb-3 text-primary text-center">Welcome <span id="userLastName"></span> at the <span
+            id="userFacility"></span></h2>
+        <p class="text-center text-muted">Select the assignment and enter hours. A meal ticket will be issued if
+          accumulated hours are 4 or greater. You can also view the past 7 days.</p>
+        <!-- New Section for Logging Hours -->
+        <div id="tabsSection" class="card shadow-sm p-4 mt-4" style="display: block;">
+          <h2 class="mb-3 text-primary text-center">Volunteer Hours</h2>
+          <!-- Tab Navigation -->
+          <ul id="requestTabs" class="nav nav-tabs">
+            <li class="nav-item"><a id="newRequestTab" data-bs-toggle="tab" href="#newRequest" class="nav-link active">Submit New Request</a></li>
+            <li class="nav-item"><a id="pastRequestsTab" data-bs-toggle="tab" href="#pastRequests" class="nav-link">View Past Requests</a></li>
+            <li class="nav-item"><a id="latestRequestTab" data-bs-toggle="tab" href="#latestRequest" class="nav-link">View Latest Request</a></li>
+          </ul>
+          <!-- Tab Content -->
+          <div class="tab-content mt-3">
+            <!-- Submit New Request Tab -->
+            <div id="newRequest" class="tab-pane fade show active">
+              <h3 class="text-success">Submit New Hours</h3>
+              <form onsubmit="event.preventDefault(); submitAssignment();">
+                <div class="mb-3">
+                  <label for="assignment" class="form-label">Assignment Type:</label>
+                  <select id="assignment" class="form-select" required>
+                    <option value="">Select</option>
+                    <option value="Project A">Project A</option>
+                    <option value="Project B">Project B</option>
+                    <option value="Project C">Project C</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label for="hours" class="form-label">Number of Hours Spent:</label>
+                  <input type="number" id="hours" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label for="description" class="form-label">Description:</label>
+                  <textarea id="description" class="form-control" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-success w-100">
+                  Submit <span id="loadingSubmit" class="spinner-border spinner-border-sm ms-2"
+                    style="display: none;"></span>
+                </button>
+              </form>
+            </div>
+            <!-- View Past Requests Tab -->
+            <div id="pastRequests" class="tab-pane fade">
+              <h3 class="text-primary">View Past Hours</h3>
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Assignment</th>
+                            <th>Description</th>
+                            <th>Hours</th>
+                            <th>Created On</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTable">
+                        <!-- Dynamic Data Will Populate Here -->
+                    </tbody>
+                </table>
+            </div>
+        
+            </div>
+             <!-- View Past Requests Tab -->
+             <div id="latestRequest" class="tab-pane fade">
+              <div class="modal fade" id="pdfModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">Print Meal Ticket</h3>
+                            <button type="button" class="btn btn-secondary" onclick="printPDF()">Print PDF</button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                          <embed id="pdfViewer" width="100%" height="600px" type="application/pdf">
+                        </div>
+                        <button onclick="printPDF()">Print</button>
+                      </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
