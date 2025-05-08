@@ -126,6 +126,10 @@
                     let pdfUrl = document.getElementById("pdfViewer").getAttribute("src");
 
                     if (pdfUrl) {
+                      document.getElementById("assignment").value = '';
+                      document.getElementById("hours").value = '';
+                      document.getElementById("description").value = '';
+                      document.getElementById("btnSubmitAssignment").style.display = 'none';
                         let newWindow = window.open(pdfUrl);
                         newWindow.onload = function () {
                             newWindow.print();
@@ -315,7 +319,7 @@
                   <label for="description" class="form-label">Description:</label>
                   <textarea id="description" class="form-control" required></textarea>
                 </div>
-                <button type="submit" class="btn btn-success w-100">
+                <button type="submit" class="btn btn-success w-100" id="btnSubmitAssignment">
                   Submit <span id="loadingSubmit" class="spinner-border spinner-border-sm ms-2"
                     style="display: none;"></span>
                 </button>
