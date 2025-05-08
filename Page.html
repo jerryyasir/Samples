@@ -1,4 +1,20 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  .modal-header {
+      background-color: #33456a;
+      color: white;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+  }
+  .modal-title {
+      font-size: 1.5rem;
+  }
+  .modal-body {
+      height: 150px;
+  }
+</style>
 <script>
   function AuthenticateRequest() {
     // Flow url copied in previous section.
@@ -27,8 +43,8 @@
       .done(function (response) {
         const result = JSON.parse(response);
         var resultContact = result["contact"];
-        //alert(resultContact);
-        if (resultContact !== "" || resultContact !== undefined || resultContact !== 'undefined') {
+        console.log(resultContact);
+        if (typeof resultContact === "string" && resultContact.trim().length > 0){
 
           document.getElementById("loginSection").style.display = "none";
           document.getElementById("dynamicSection").style.display = "block";
@@ -39,6 +55,12 @@
           // Hide loading indicator
           document.getElementById("loadingLogin").style.display = "none";
 
+        }
+        else{
+          event.preventDefault();
+          document.getElementById("loadingLogin").style.display = "none";
+          var errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+          errorModal.show();
         }
       })
       .catch(error => {
@@ -79,7 +101,8 @@
           const resultOfSubmission = JSON.parse(response);
           const base64String = resultOfSubmission["pdf"];
 
-          if (base64String !== "" || base64String !== undefined || base64String !== 'undefined') {
+          
+          if (typeof base64String === "string" && base64String.trim().length > 0){
 
             const byteCharacters = atob(base64String);
             const byteNumbers = new Uint8Array(byteCharacters.length);
@@ -160,7 +183,7 @@
       .done(function (response) {
         const result = JSON.parse(response);
         const pastAssignments = result["assignments"];
-        if (pastAssignments !== "" || pastAssignments !== undefined || pastAssignments !== 'undefined') {
+        if (typeof pastAssignments === "string" && pastAssignments.trim().length > 0){
           var pastAssignmentsArray =JSON.parse(pastAssignments);
           let recordsTable = document.getElementById("recordsTable");
           pastAssignmentsArray.forEach(record => {
@@ -199,6 +222,22 @@
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title" id="errorModalLabel">Invalid Data</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              The Verification Information in Invalid.  Please check your records.
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+      </div>
+  </div>
+</div>
 <div class="row sectionBlockLayout text-start"
   style="display: flex; flex-wrap: wrap; margin: 0px; min-height: auto; padding: 8px;">
   <div class="container" style="display: flex; flex-wrap: wrap;">
