@@ -1,0 +1,5 @@
+Select(Parent);
+//https://learn.microsoft.com/en-us/power-apps/developer/model-driven-apps/set-field-values-using-parameters-passed-form
+//"ownerid={B8C6E040-656E-DF11-B414-00155DB1891A}&owneridname=Mark Folkerts&owneridtype=systemuser"
+Set(LookupInfo, EncodeUrl("parentcontactid={" & ThisItem.Contact & "}&parentcontactidname=" & ThisItem.'Full Name' & "&subject=" & ThisItem.'Full Name'));
+Launch("https://org4b5c02c8.crm.dynamics.com/main.aspx?appid=01da302b-8b37-ec11-b6e6-000d3a30fabe&pagetype=entityrecord&etn=lead&extraqs=" & LookupInfo);
