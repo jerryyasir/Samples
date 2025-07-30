@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Month Input Validation</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-6">
+                <form id="monthForm">
+                    <div class="mb-3">
+                        <label for="monthInput" class="form-label">Enter Month (1-12):</label>
+                        <input type="number" class="form-control" id="monthInput" placeholder="Enter a number between 1 and 12" required>
+                        <div id="monthError" class="invalid-feedback"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const monthInput = document.getElementById('monthInput');
+        const monthError = document.getElementById('monthError');
+        const form = document.getElementById('monthForm');
+
+        monthInput.addEventListener('input', validateMonth);
+
+        function validateMonth() {
+            const value = parseInt(monthInput.value);
+
+            if (isNaN(value)) {
+                showError('Please enter a valid number');
+                return;
+            }
+
+            if (value < 1 || value > 12) {
+                showError('Month must be between 1 and 12');
+            } else {
+                clearError();
+            }
+        }
+
+        function showError(message) {
+            monthInput.classList.add('is-invalid');
+            monthError.textContent = message;
+        }
+
+        function clearError() {
+            monthInput.classList.remove('is-invalid');
+            monthError.textContent = '';
+        }
+
+        // Prevent form submission to keep this as a validation demo
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            validateMonth();
+        });
+    </script>
+</body>
+</html>
