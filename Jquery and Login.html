@@ -240,7 +240,7 @@
 
     <!-- Request Meal Ticket Modal -->
     <div class="modal fade" id="mealTicketModal" tabindex="-1" role="dialog" aria-labelledby="mealTicketModalLabel">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-lg" style="width: 60%;">
             <div class="modal-content">
                 <div class="modal-header" style="background-color: #FFC107;">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
@@ -481,10 +481,14 @@
                     return;
                 }
 
-                // Validate hours: must be 00-23
+                // Validate hours: must be 00-23 and two digits
                 const hoursNum = parseInt(hours);
-                if (isNaN(hoursNum) || hoursNum < 0 || hoursNum > 23 || hours.length !== 2) {
-                    alert('Hours must be a two-digit number between 00 and 23.');
+                if (isNaN(hoursNum) || hoursNum < 0 || hoursNum > 23) {
+                    alert('Hours must be a number between 0 and 23.');
+                    return;
+                }
+                if (hours.length !== 2) {
+                    alert('Hours must be a two-digit number (e.g., 00 to 23).');
                     return;
                 }
 
