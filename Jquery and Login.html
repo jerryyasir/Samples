@@ -1,149 +1,283 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Volunteer Hours Tracking</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap 3 CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <!-- jQuery (required for Bootstrap JS and form handling) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Bootstrap 3 JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <style>
         body {
-            margin: 20px auto 0 auto;
-            font-family: Arial, sans-serif;
-            min-height: 100vh;
+            background-color: #F5F5F5; /* White Smoke for page */
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #337ab7; /* Bootstrap primary color */
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .nav-tabs > li.active > a,
+        .nav-tabs > li.active > a:hover,
+        .nav-tabs > li.active > a:focus {
+            background-color: #FFC107; /* Dark yellow for active tab */
+        }
+        .nav-tabs > li > a {
+            font-size: 16px; /* Increased font size */
+            font-weight: bold; /* Bold for prominence */
+        }
+        .hours-table thead th,
+        .hours-table tfoot th {
+            background-color: #FFC107; /* Dark yellow for table header and footer */
+            color: #000000; /* Black text for header and footer */
+        }
+        .hours-table tbody td {
+            color: #000000; /* Black text for table body */
+        }
+        .hours-table th {
+            cursor: pointer; /* Indicate clickable headers for sorting */
+        }
+        #loginSection, #welcomeSection, .panel, .nav-tabs, .tab-content, .hours-table {
+            background-color: #F5F5F5; /* White Smoke for sections and components */
+        }
+        .modal-content {
+            background-color: #F5F5F5; /* White Smoke for modals */
+        }
+        .button-group {
+            float: right;
+        }
+        #hoursTable, #todayHoursHeading, #totalHoursRow {
+            display: none; /* Initially hide table, heading, and total row */
+        }
+        .panel-heading {
             display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-        }
-        .parent-container {
-            display: flex;
-            justify-content: center;
-        }
-        .form-container {
-            width: 500px;
-            padding: 20px;
-            border: 2px solid whitesmoke;
-            border-radius: 10px;
-        }
-        .form-label {
-            font-weight: bold;
-        }
-        .dob-group {
-            display: flex;
-            gap: 10px;
-        }
-        .dob-input {
-            max-width: 70px;
-        }
-        .error-text {
-            color: red;
-            font-size: 14px;
-            margin-top: 5px;
-            display: none; /* Hide error messages by default */
-        }
-        .login-btn {
-            margin-top: 20px;
-        }
-        .help-text {
-            font-size: 12px;
-            color: #666;
-            margin-top: 10px;
+            align-items: center;
+            justify-content: space-between;
         }
     </style>
 </head>
 <body>
-    <div class="parent-container">
-        <div class="form-container">
-            <h2>Volunteer Hours Tracking</h2>
-            <h4>Time Entry and Validation</h4>
-            <form id="volunteerForm" novalidate>
-                <div class="mb-3">
-                    <label for="firstName" class="form-label">First Name</label>
-                    <input type="text" class="form-control" id="firstName" required>
-                    <div id="firstNameError" class="invalid-feedback">Please enter your first name</div>
-                </div>
-                <div class="mb-3">
-                    <label for="lastName" class="form-label">Last Name</label>
-                    <input type="text" class="form-control" id="lastName" required>
-                    <div id="lastNameError" class="invalid-feedback">Please enter your last name</div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Date of Birth</label>
-                    <p class="help-text">Please enter 2 digits for the month and day and 4 digits for the year</p>
-                    <div class="dob-group">
-                        <input type="text" class="form-control dob-input" id="monthInput" maxlength="2" required>
-                        <input type="text" class="form-control dob-input" id="dayInput" maxlength="2" required>
-                        <input type="text" class="form-control dob-input" id="yearInput" maxlength="4" required>
+    <div class="container" id="loginSection">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                <h2>Volunteer Hours Tracking</h2>
+                <h3>Time Entry and Validation</h3>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" class="form-control" id="firstName" name="firstName" required>
+                        <p class="text-danger error" id="firstNameError">Please enter your first name</p>
                     </div>
-                    <div id="dobError" class="error-text">Month must be between 1 and 12</div>
-                    <div id="dayError" class="invalid-feedback">Day must be between 1 and 31</div>
-                    <div id="yearError" class="invalid-feedback">Year must be between 1950 and 2007</div>
-                </div>
-                <div class="mb-3">
-                    <label for="accessCode" class="form-label">Access Code</label>
-                    <input type="password" class="form-control" id="accessCode" required>
-                    <div id="accessCodeError" class="invalid-feedback">Please enter your access code</div>
-                </div>
-                <p class="help-text">Please contact your local CDCE staff if you need login assistance.</p>
-                <button type="submit" class="btn btn-primary login-btn" id="loginButton" disabled>Login</button>
-                <button type="button" class="btn btn-secondary login-btn" id="resetButton">Reset</button>
-            </form>
+
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" class="form-control" id="lastName" name="lastName" required>
+                        <p class="text-danger error" id="lastNameError">Please enter your last name</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <div class="row">
+                            <div class="col-xs-4">
+                                <input type="text" class="form-control" id="month" name="month" placeholder="MM" maxlength="2" required>
+                            </div>
+                            <div class="col-xs-4">
+                                <input type="text" class="form-control" id="day" name="day" placeholder="DD" maxlength="2" required>
+                            </div>
+                            <div class="col-xs-4">
+                                <input type="text" class="form-control" id="year" name="year" placeholder="YYYY" maxlength="4" required>
+                            </div>
+                        </div>
+                        <p class="text-danger error" id="monthError">Month must be between 1 and 12</p>
+                        <p class="text-danger error" id="dayError">Day must be between 1 and 31</p>
+                        <p class="text-danger error" id="yearError">Year must be between 1950 and 2007</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accessCode">Access Code</label>
+                        <input type="password" class="form-control" id="accessCode" name="accessCode" required>
+                        <p class="text-danger error" id="accessCodeError">Please enter your access code</p>
+                    </div>
+
+                    <h4>Please contact your local CDCE staff if you need login assistance.</h4>
+
+                    <button type="submit" class="btn btn-primary" id="loginButton">Login</button>
+                    <button type="reset" class="btn btn-default">Reset</button>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Bootstrap Modal -->
-    <div class="modal fade" id="formValuesModal" tabindex="-1" aria-labelledby="formValuesModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="formValuesModalLabel">Submitted Data</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="container" id="welcomeSection" style="display: none; margin-top: 20px;">
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2" style="max-width: 800px;">
+                <div class="panel panel-default">
+                    <div class="panel-heading" style="background-color: #FFC107;">
+                        <h2 class="panel-title" id="welcomeMessage" style="font-size: 24px; font-weight: bold; color: #00008B;"></h2>
+                        <button class="btn btn-default" id="logoutButton" style="margin-left: 10px;"><span class="glyphicon glyphicon-log-out"></span> Logout</button>
+                    </div>
+                    <div class="panel-body">
+                        <h4>Use the section below to submit your hours and print the meal ticket. If you face any issue, please contact facility IT support.</h4>
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li role="presentation" class="active"><a href="#timeEntry" aria-controls="timeEntry" role="tab" data-toggle="tab">Time Entry</a></li>
+                            <li role="presentation"><a href="#mealTicket" aria-controls="mealTicket" role="tab" data-toggle="tab">Meal Ticket</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div role="tabpanel" class="tab-pane active" id="timeEntry">
+                                <p>Click the 'Add Hours' button to record your volunteer hours for today.</p>
+                                <div class="button-group">
+                                    <button class="btn" style="background-color: #FFC107; color: #00008B;" id="addHours"><span class="glyphicon glyphicon-plus"></span> Add Hours</button>
+                                    <button class="btn" style="background-color: #FFC107; color: #00008B; margin-left: 10px; display: none;" id="requestMealTicket"><span class="glyphicon glyphicon-cutlery"></span> Request Meal Ticket</button>
+                                </div>
+                                <div style="clear: both; margin-bottom: 15px;"></div>
+                                <h4 id="todayHoursHeading">Today's Hours</h4>
+                                <table class="table table-bordered hours-table" id="hoursTable">
+                                    <thead>
+                                        <tr>
+                                            <th data-sort="volunteerAssignment">Volunteer Assignment</th>
+                                            <th data-sort="organization">Organization</th>
+                                            <th data-sort="hours" class="text-right">Hours</th>
+                                            <th data-sort="minutes" class="text-right">Minutes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                    <tfoot id="totalHoursRow">
+                                        <tr>
+                                            <th colspan="3">Total Hours</th>
+                                            <th class="text-right" id="totalHours">0.00</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div role="tabpanel" class="tab-pane" id="mealTicket">
+                                <p>Print your meal ticket here (placeholder).</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-body" id="modalBodyContent">
-                    <!-- Dynamic content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div class="spinner"></div>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Hours Modal -->
+    <div class="modal fade" id="addHoursModal" tabindex="-1" role="dialog" aria-labelledby="addHoursModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #FFC107;">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="addHoursModalLabel" style="color: #00008B;">Add Volunteer Hours</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="addHoursForm">
+                        <div class="form-group">
+                            <label for="volunteerAssignment">Volunteer Assignment</label>
+                            <select class="form-control" id="volunteerAssignment" name="volunteerAssignment" required>
+                                <option value="" disabled selected>Select an assignment</option>
+                                <option value="Event Support">Event Support</option>
+                                <option value="Admin Support">Admin Support</option>
+                                <option value="Community Outreach">Community Outreach</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="organization">Organization</label>
+                            <select class="form-control" id="organization" name="organization" required>
+                                <option value="" disabled selected>Select an organization</option>
+                                <option value="Red Cross">Red Cross</option>
+                                <option value="Local Shelter">Local Shelter</option>
+                                <option value="Food Bank">Food Bank</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    <label for="hours">Hours</label>
+                                    <input type="number" class="form-control" id="hours" name="hours" min="0" max="23" maxlength="2" required>
+                                </div>
+                                <div class="col-xs-6">
+                                    <label for="minutes">Minutes</label>
+                                    <select class="form-control" id="minutes" name="minutes" required>
+                                        <option value="" disabled selected>Select minutes</option>
+                                        <option value="0">0</option>
+                                        <option value="15">15</option>
+                                        <option value="30">30</option>
+                                        <option value="45">45</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-default" id="resetHoursForm">Reset</button>
+                    <button type="button" class="btn" style="background-color: #FFC107; color: #00008B;" id="saveHours">Save</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Meal Ticket Modal -->
+    <div class="modal fade" id="mealTicketModal" tabindex="-1" role="dialog" aria-labelledby="mealTicketModalLabel">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #FFC107;">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h1 class="modal-title" id="mealTicketModalLabel" style="color: #00008B;">Print Meal Ticket</h1>
+                </div>
+                <div class="modal-body">
+                    <form id="mealTicketForm">
+                        <div class="form-group">
+                            <label for="facilitySelect">Facility</label>
+                            <select class="form-control" id="facilitySelect" name="facility" required>
+                                <option value="" disabled selected>Select a facility</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Cancel</button>
+                    <button type="button" class="btn" style="background-color: #FFC107; color: #00008B;" id="printMealTicket"><span class="glyphicon glyphicon-cutlery"></span> Print Meal Ticket</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmPrintModal" tabindex="-1" role="dialog" aria-labelledby="confirmPrintModalLabel">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #FFC107;">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="confirmPrintModalLabel" style="color: #00008B;">Confirm Print</h4>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmPrint">Confirm</button>
                 </div>
             </div>
         </div>
@@ -151,137 +285,331 @@
 
     <script>
         $(document).ready(function() {
-            const currentYear = new Date().getFullYear(); // 2025 based on current date
-            const minYear = 1950;
-            const maxYear = currentYear - 18; // 2007
+            // Hide error messages initially
+            $('.error').hide();
 
-            // Function to validate numeric input
-            function validateNumericInput(inputId, errorId, min, max, length) {
-                let $input = $('#' + inputId);
-                let value = $input.val().trim();
-                
-                if (!/^\d*$/.test(value)) {
-                    $input.val(value.replace(/[^0-9]/g, ''));
-                    value = $input.val().trim();
-                }
-                
-                if (value.length !== length || value === '' || isNaN(value) || parseInt(value) < min || parseInt(value) > max) {
-                    $input.addClass('is-invalid');
-                    $('#' + errorId).show();
-                    return false;
+            // Load sample data into login form fields
+            $('#firstName').val('John');
+            $('#lastName').val('Doe');
+            $('#month').val('05');
+            $('#day').val('15');
+            $('#year').val('1980');
+            $('#accessCode').val('1234');
+
+            // Function to load and display hours from localStorage
+            function loadHoursTable() {
+                const storedHours = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+                const tbody = $('#hoursTable tbody');
+                tbody.empty();
+                const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+                const todayHours = storedHours.filter(entry => entry.timestamp.startsWith(today));
+
+                // Toggle table, heading, and total row visibility
+                if (todayHours.length > 0) {
+                    $('#hoursTable').show();
+                    $('#todayHoursHeading').show();
+                    if (todayHours.length > 1) {
+                        $('#totalHoursRow').show();
+                    } else {
+                        $('#totalHoursRow').hide();
+                    }
                 } else {
-                    $input.removeClass('is-invalid');
-                    $('#' + errorId).hide();
-                    return true;
+                    $('#hoursTable').hide();
+                    $('#todayHoursHeading').hide();
+                    $('#totalHoursRow').hide();
                 }
-            }
 
-            // Function to validate text input
-            function validateTextInput(inputId) {
-                let $input = $('#' + inputId);
-                if ($input.val().trim() === '') {
-                    $input.addClass('is-invalid');
-                    return false;
-                } else {
-                    $input.removeClass('is-invalid');
-                    return true;
-                }
-            }
-
-            // Validation and button enable/disable
-            function checkFormValidity() {
-                let isValid = validateNumericInput('monthInput', 'dobError', 1, 12, 2) &&
-                              validateNumericInput('dayInput', 'dayError', 1, 31, 2) &&
-                              validateNumericInput('yearInput', 'yearError', minYear, maxYear, 4) &&
-                              validateTextInput('firstName') &&
-                              validateTextInput('lastName') &&
-                              validateTextInput('accessCode');
-                $('#loginButton').prop('disabled', !isValid);
-                return isValid;
-            }
-
-            // Month validation
-            $('#monthInput').on('input', function() {
-                validateNumericInput('monthInput', 'dobError', 1, 12, 2);
-                checkFormValidity();
-            }).on('blur', function() {
-                validateNumericInput('monthInput', 'dobError', 1, 12, 2);
-                checkFormValidity();
-            }).on('keypress', function(e) {
-                let charCode = e.which ? e.which : e.keyCode;
-                if (charCode < 48 || charCode > 57) e.preventDefault();
-            });
-
-            // Day validation
-            $('#dayInput').on('input', function() {
-                validateNumericInput('dayInput', 'dayError', 1, 31, 2);
-                checkFormValidity();
-            }).on('blur', function() {
-                validateNumericInput('dayInput', 'dayError', 1, 31, 2);
-                checkFormValidity();
-            }).on('keypress', function(e) {
-                let charCode = e.which ? e.which : e.keyCode;
-                if (charCode < 48 || charCode > 57) e.preventDefault();
-            });
-
-            // Year validation
-            $('#yearInput').on('input', function() {
-                validateNumericInput('yearInput', 'yearError', minYear, maxYear, 4);
-                checkFormValidity();
-            }).on('blur', function() {
-                validateNumericInput('yearInput', 'yearError', minYear, maxYear, 4);
-                checkFormValidity();
-            }).on('keypress', function(e) {
-                let charCode = e.which ? e.which : e.keyCode;
-                if (charCode < 48 || charCode > 57) e.preventDefault();
-            });
-
-            // Text field validation
-            $('#firstName, #lastName, #accessCode').on('input', function() {
-                validateTextInput($(this).attr('id'));
-                checkFormValidity();
-            }).on('blur', function() {
-                validateTextInput($(this).attr('id'));
-                checkFormValidity();
-            });
-
-            // Reset button functionality
-            $('#resetButton').on('click', function() {
-                $('#volunteerForm')[0].reset();
-                $('#volunteerForm input').removeClass('is-invalid');
-                $('.error-text, .invalid-feedback').hide();
-                $('#loginButton').prop('disabled', true);
-            });
-
-            // Login button click with Bootstrap Modal
-            $('#loginButton').on('click', function(e) {
-                e.preventDefault();
-                if (checkFormValidity()) {
-                    let firstName = $('#firstName').val().trim();
-                    let lastName = $('#lastName').val().trim();
-                    let month = $('#monthInput').val().trim();
-                    let day = $('#dayInput').val().trim();
-                    let year = $('#yearInput').val().trim();
-                    let accessCode = $('#accessCode').val().trim();
-
-                    // Populate modal body
-                    let modalContent = `
-                        <p><strong>First Name:</strong> ${firstName}</p>
-                        <p><strong>Last Name:</strong> ${lastName}</p>
-                        <p><strong>Date of Birth:</strong> ${month}/${day}/${year}</p>
-                        <p><strong>Access Code:</strong> ${accessCode.replace(/./g, '*')}</p>
+                // Populate table
+                todayHours.forEach((entry) => {
+                    const row = `
+                        <tr>
+                            <td>${entry.volunteerAssignment}</td>
+                            <td>${entry.organization}</td>
+                            <td class="text-right">${entry.hours}</td>
+                            <td class="text-right">${entry.minutes}</td>
+                        </tr>
                     `;
-                    $('#modalBodyContent').html(modalContent);
+                    tbody.append(row);
+                });
 
-                    // Show the Bootstrap modal
-                    new bootstrap.Modal($('#formValuesModal')).show();
+                // Calculate and display total hours
+                const totalHours = todayHours.reduce((sum, entry) => {
+                    return sum + parseInt(entry.hours) + (parseInt(entry.minutes) / 60);
+                }, 0);
+                $('#totalHours').text(totalHours.toFixed(2));
+
+                // Show/hide Request Meal Ticket button based on total hours
+                if (totalHours > 4) {
+                    $('#requestMealTicket').show();
+                } else {
+                    $('#requestMealTicket').hide();
+                }
+            }
+
+            // Function to populate facility dropdown
+            function populateFacilityDropdown() {
+                const storedHours = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+                const today = new Date().toISOString().split('T')[0];
+                const todayHours = storedHours.filter(entry => entry.timestamp.startsWith(today));
+
+                // Calculate total hours per organization
+                const orgHours = {};
+                todayHours.forEach(entry => {
+                    const org = entry.organization;
+                    orgHours[org] = (orgHours[org] || 0) + parseInt(entry.hours) + (parseInt(entry.minutes) / 60);
+                });
+
+                // Populate dropdown with organizations having > 4 hours
+                const select = $('#facilitySelect');
+                select.empty();
+                select.append('<option value="" disabled selected>Select a facility</option>');
+                Object.keys(orgHours).forEach(org => {
+                    if (orgHours[org] > 4) {
+                        select.append(`<option value="${org}">${org}</option>`);
+                    }
+                });
+            }
+
+            // Handle login form submission
+            $('#loginForm').on('submit', function(event) {
+                event.preventDefault();
+                let isValid = true;
+
+                // Reset error messages
+                $('.error').hide();
+
+                // Get login form values
+                const firstName = $('#firstName').val().trim();
+                const lastName = $('#lastName').val().trim();
+                const month = parseInt($('#month').val().trim());
+                const day = parseInt($('#day').val().trim());
+                const year = parseInt($('#year').val().trim());
+                const accessCode = $('#accessCode').val().trim();
+
+                // Validate login inputs
+                if (!firstName) {
+                    $('#firstNameError').show();
+                    isValid = false;
+                }
+                if (!lastName) {
+                    $('#lastNameError').show();
+                    isValid = false;
+                }
+                if (isNaN(month) || month < 1 || month > 12) {
+                    $('#monthError').show();
+                    isValid = false;
+                }
+                if (isNaN(day) || day < 1 || day > 31) {
+                    $('#dayError').show();
+                    isValid = false;
+                }
+                if (isNaN(year) || year < 1950 || year > 2007) {
+                    $('#yearError').show();
+                    isValid = false;
+                }
+                if (!accessCode) {
+                    $('#accessCodeError').show();
+                    isValid = false;
+                }
+
+                // If valid, show loading indicator for 3 seconds, then show welcome section
+                if (isValid) {
+                    $('#loginSection').hide();
+                    $('#loadingModal').modal('show');
+                    setTimeout(function() {
+                        $('#loadingModal').modal('hide');
+                        $('#welcomeMessage').text(`Welcome ${firstName} ${lastName}`);
+                        $('#welcomeSection').fadeIn();
+                        loadHoursTable(); // Load table data
+                    }, 3000);
                 }
             });
 
-            // Ensure form submission also triggers the login logic
-            $('#volunteerForm').on('submit', function(e) {
-                e.preventDefault();
-                $('#loginButton').trigger('click');
+            // Handle login form reset button
+            $('button[type="reset"]').on('click', function() {
+                $('.error').hide();
+                // Reload sample data on reset
+                $('#firstName').val('John');
+                $('#lastName').val('Doe');
+                $('#month').val('05');
+                $('#day').val('15');
+                $('#year').val('1980');
+                $('#accessCode').val('1234');
+            });
+
+            // Handle logout button
+            $('#logoutButton').on('click', function() {
+                localStorage.removeItem('volunteerHours'); // Clear localStorage
+                $('#welcomeSection').hide();
+                $('#loginSection').fadeIn();
+                // Reload sample data when returning to login
+                $('#firstName').val('John');
+                $('#lastName').val('Doe');
+                $('#month').val('05');
+                $('#day').val('15');
+                $('#year').val('1980');
+                $('#accessCode').val('1234');
+                $('.error').hide();
+            });
+
+            // Handle Add Hours button to show modal with loading indicator
+            $('#addHours').on('click', function() {
+                $('#loadingModal').modal('show');
+                setTimeout(function() {
+                    $('#loadingModal').modal('hide');
+                    // Reset form fields when opening modal
+                    $('#addHoursForm')[0].reset();
+                    $('#addHoursModal').modal('show');
+                }, 2000);
+            });
+
+            // Handle Add Hours form reset button
+            $('#resetHoursForm').on('click', function() {
+                $('#addHoursForm')[0].reset();
+            });
+
+            // Handle Add Hours form save button
+            $('#saveHours').on('click', function() {
+                const volunteerAssignment = $('#volunteerAssignment').val();
+                const organization = $('#organization').val();
+                const hours = $('#hours').val();
+                const minutes = parseInt($('#minutes').val());
+
+                // Validate inputs
+                if (!volunteerAssignment || !organization || !hours || isNaN(minutes)) {
+                    alert('Please fill in all fields.');
+                    return;
+                }
+
+                // Validate hours: must be 00-23
+                const hoursNum = parseInt(hours);
+                if (isNaN(hoursNum) || hoursNum < 0 || hoursNum > 23 || hours.length !== 2) {
+                    alert('Hours must be a two-digit number between 00 and 23.');
+                    return;
+                }
+
+                // Validate minimum 15 minutes if hours is 0
+                if (hoursNum === 0 && minutes === 0) {
+                    alert('You must select at least 15 minutes.');
+                    return;
+                }
+
+                // Show loading indicator for 2 seconds
+                $('#addHoursModal').modal('hide');
+                $('#loadingModal').modal('show');
+                setTimeout(function() {
+                    $('#loadingModal').modal('hide');
+
+                    // Create JSON object
+                    const hoursData = {
+                        volunteerAssignment: volunteerAssignment,
+                        organization: organization,
+                        hours: hoursNum,
+                        minutes: minutes,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    // Retrieve existing hours from localStorage or initialize empty array
+                    let storedHours = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+                    storedHours.push(hoursData);
+                    localStorage.setItem('volunteerHours', JSON.stringify(storedHours));
+
+                    // Refresh table
+                    loadHoursTable();
+                }, 2000);
+            });
+
+            // Handle Request Meal Ticket button
+            $('#requestMealTicket').on('click', function() {
+                populateFacilityDropdown();
+                $('#mealTicketModal').modal('show');
+            });
+
+            // Handle Print Meal Ticket button
+            $('#printMealTicket').on('click', function() {
+                const facility = $('#facilitySelect').val();
+                if (!facility) {
+                    alert('Please select a facility.');
+                    return;
+                }
+                $('#confirmMessage').text(`Are you sure you want to print the meal ticket from ${facility}?`);
+                $('#mealTicketModal').modal('hide');
+                $('#confirmPrintModal').modal('show');
+            });
+
+            // Handle Confirm Print button (placeholder)
+            $('#confirmPrint').on('click', function() {
+                console.log('Meal ticket print confirmed for facility: ' + $('#facilitySelect').val());
+                $('#confirmPrintModal').modal('hide');
+            });
+
+            // Handle table sorting
+            $('#hoursTable th').on('click', function() {
+                const sortKey = $(this).data('sort');
+                const storedHours = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+                const today = new Date().toISOString().split('T')[0];
+                const todayHours = storedHours.filter(entry => entry.timestamp.startsWith(today));
+
+                // Toggle sort direction
+                const sortDirection = $(this).hasClass('asc') ? -1 : 1;
+                $('#hoursTable th').removeClass('asc desc');
+                $(this).addClass(sortDirection === 1 ? 'asc' : 'desc');
+
+                // Sort data
+                todayHours.sort((a, b) => {
+                    let valA = a[sortKey];
+                    let valB = b[sortKey];
+                    if (sortKey === 'hours' || sortKey === 'minutes') {
+                        valA = parseInt(valA);
+                        valB = parseInt(valB);
+                    }
+                    if (valA < valB) return -sortDirection;
+                    if (valA > valB) return sortDirection;
+                    return 0;
+                });
+
+                // Update table
+                const tbody = $('#hoursTable tbody');
+                tbody.empty();
+                todayHours.forEach((entry) => {
+                    const row = `
+                        <tr>
+                            <td>${entry.volunteerAssignment}</td>
+                            <td>${entry.organization}</td>
+                            <td class="text-right">${entry.hours}</td>
+                            <td class="text-right">${entry.minutes}</td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+
+                // Recalculate total hours after sorting
+                const totalHours = todayHours.reduce((sum, entry) => {
+                    return sum + parseInt(entry.hours) + (parseInt(entry.minutes) / 60);
+                }, 0);
+                $('#totalHours').text(totalHours.toFixed(2));
+
+                // Toggle table, heading, and total row visibility
+                if (todayHours.length > 0) {
+                    $('#hoursTable').show();
+                    $('#todayHoursHeading').show();
+                    if (todayHours.length > 1) {
+                        $('#totalHoursRow').show();
+                    } else {
+                        $('#totalHoursRow').hide();
+                    }
+                } else {
+                    $('#hoursTable').hide();
+                    $('#todayHoursHeading').hide();
+                    $('#totalHoursRow').hide();
+                }
+
+                // Update Request Meal Ticket button visibility
+                if (totalHours > 4) {
+                    $('#requestMealTicket').show();
+                } else {
+                    $('#requestMealTicket').hide();
+                }
             });
         });
     </script>
