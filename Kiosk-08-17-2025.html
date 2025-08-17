@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volunteer Hours Tracking</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700&display=swap" rel="stylesheet">
+<!-- Bootstrap 3 CSS -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+<style>
+    body {
+        background-color: whitesmoke; /* Set the background color of the application page to white smoke */
+        font-family: 'Source Sans Pro', sans-serif;
+    }
+    .spinner { border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #337ab7; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+    /* Unified dark blue theme */
+    .panel-heading, .modal-header, .nav-tabs > li.active > a, .hours-table thead th, .btn-custom {
+        background-color: #001F3F !important;
+        color: white !important;
+    }
+    .nav-tabs > li > a { background-color: #E0E0E0; font-size: 16px; font-weight: bold; }
+    .nav-tabs > li.active > a { color: white; }
+    .hours-table tfoot th { background-color: #001F3F; color: white; }
+    .btn-custom { border: none; }
+    .btn-custom:hover { background-color: #0d2240 !important; }
+    .form-group { margin-bottom: 25px; font-size: 16px;}
+    .form-control { font-size: 16px;}
+    .form-control:focus { background-color: #FFFACD; border-color: #112e51; box-shadow: 0 0 0 0.2rem rgba(17,46,81,0.25); }
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; border-top-left-radius: 4px; border-top-right-radius: 4px; }
+    .main-title { background-color: #001F3F; color: white; padding: 10px; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-top: 0; margin-bottom: 0; font-size: 32px; font-weight: 400;}
+    .sub-title {  color: black; font-size: 20px; font-weight: 400; margin-bottom: 16px;}
+    .mt-20 { margin-top: 20px; }
+    .is-hidden { display: none; }
+    .login-card { max-width: 400px; width: 100%; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; background: whitesmoke; box-shadow: 0 2px 6px rgba(0,0,0,0.05); overflow: hidden; }
+    .login-card .content { padding: 0px 15px 15px 15px; }
+    .login-card .content h4 { margin-top: 6px; }
+    .loading { padding: 10px; }
+    /* Loading modal light theme, centered */
+    .loading-modal .modal-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; width: 300px; max-width: 90%; }
+    /* Override Bootstrap 3 fade/in transforms that can offset the dialog */
+    .loading-modal.fade .modal-dialog,
+    .loading-modal.in .modal-dialog { -webkit-transform: translate(-50%, -50%) !important; transform: translate(-50%, -50%) !important; }
+    .loading-modal .modal-content { background-color: #eee; color: #222; border: none; border-radius: 8px; }
+    .loading-modal .modal-body { text-align: center; padding: 20px; }
+    .loading-modal .spinner { border: 4px solid rgba(0,0,0,0.1); border-left-color: #112e51; margin-bottom: 10px; }
+    /* Session modal centered and above other modals */
+    .session-modal .modal-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; max-width: 420px; width: 90%; }
+    .session-modal.fade .modal-dialog,
+    .session-modal.in .modal-dialog { -webkit-transform: translate(-50%, -50%) !important; transform: translate(-50%, -50%) !important; }
+    #sessionWarningModal { z-index: 1060; }
+    .modal-backdrop.session-backdrop { z-index: 1055; }
+    /* Space icons from text */
+    .btn .glyphicon { margin-right: 4px; }
+    /* Center text in Date of Birth inputs */
+    #loginForm #month, #loginForm #day { text-align: center; }
+    #loginForm #year { text-align: right; }
+    /* Distinct styling for Logout button */
+    #logoutButton { background-color: #d9534f !important; border: none; }
+    #logoutButton:hover, #logoutButton:focus { background-color: #c9302c !important; }
+    /* Narrow Hours & Minutes columns (~75% original) */
+    .hours-table th.hours-col, .hours-table td.hours-col { width: 6%; padding-left: 4px; padding-right: 4px; }
+    .hours-table th.minutes-col, .hours-table td.minutes-col { width: 6%; padding-left: 4px; padding-right: 4px; }
+    /* Narrow Hours Type & Status columns (~60% of original width) */
+    .hours-table th.hours-type-col, .hours-table td.hours-type-col { width: 11%; }
+    .hours-table th.status-col, .hours-table td.status-col { width: 11%; }
+    /* Center Add Hours modal and enlarge title */
+    #addHoursModal .modal-dialog { position: fixed; top:50%; left:50%; transform: translate(-50%, -50%); margin:0; }
+    #addHoursModal.fade .modal-dialog, #addHoursModal.in .modal-dialog { -webkit-transform: translate(-50%, -50%) !important; transform: translate(-50%, -50%) !important; }
+    #addHoursModal .modal-title { font-size: 24px; }
+    /* Force black text for all inputs/selects/textareas in Add Hours dialog */
+    #addHoursModal input,
+    #addHoursModal select,
+    #addHoursModal textarea { color: #000 !important; }
+    .hours-table {
+        border: 1px solid #ddd; /* Adds a border around all sides of the table */
+        border-collapse: collapse; /* Ensures borders do not double up */
+    }
+
+    .hours-table th, .hours-table td {
+        border: 1px solid #ddd; /* Adds borders to table cells */
+    }
+
+    .hours-table th.hours-col, .hours-table th.minutes-col {
+        text-align: center;
+    }
+    .hours-table td.hours-col, .hours-table td.minutes-col {
+        padding-right: 4px; /* Adds right padding to Hours and Minutes values */
+    }
+
+    .fixed-logo {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+    }
+
+    .fixed-logo img {
+        height: 200px; /* Update the logo size to 200px */
+    }
+
+    .add-hours-text {
+        margin-top: 8px;
+        font-size: 16px; /* Adds 8px space above the text */
+    }
+
+    .welcome-header {
+        font-weight: bold; /* Makes the Welcome header text bold */
+    }
+    .hours-table th:first-child, .hours-table td:first-child {
+        width: 40px; /* Set the width of the first column to 40px */
+    }
+    #loginForm #month::placeholder, #loginForm #day::placeholder, #loginForm #year::placeholder {
+        text-align: right; /* Right-align the placeholder text of Date of Birth input controls */
+    }
+    #loginSection, #welcomeSection {
+        background-color: whitesmoke; /* Set the background color of the login and welcome sections to white smoke */
+    }
+    #welcomeSection .panel,
+    #welcomeSection .panel-body {
+        background-color: whitesmoke; /* Ensure welcome section panel uses whitesmoke */
+    }
+    #accessCodeInfo { margin-top:24px; padding:6px 10px; }
+    #addHours, #editHours { float:right; margin-left:8px; }
+    #todayHoursHeading { clear:both; }
+    /* Rounded top corners for first header row of hours table */
+    .hours-table { border-radius:8px 8px 0 0; overflow:hidden; }
+    .hours-table thead th:first-child { border-top-left-radius:8px; }
+    .hours-table thead th:last-child { border-top-right-radius:8px; }
+    /* Hide placeholders while focused (visual disappearance) */
+    #firstName:focus::placeholder,
+    #lastName:focus::placeholder,
+    #month:focus::placeholder,
+    #day:focus::placeholder,
+    #year:focus::placeholder,
+    #accessCode:focus::placeholder {
+        color: transparent;
+    }
+    /* Vendor prefixes for older browser placeholder pseudo-elements */
+    #firstName:focus::-webkit-input-placeholder,
+    #lastName:focus::-webkit-input-placeholder,
+    #month:focus::-webkit-input-placeholder,
+    #day:focus::-webkit-input-placeholder,
+    #year:focus::-webkit-input-placeholder,
+    #accessCode:focus::-webkit-input-placeholder { color: transparent; }
+    #firstName:focus:-ms-input-placeholder,
+    #lastName:focus:-ms-input-placeholder,
+    #month:focus:-ms-input-placeholder,
+    #day:focus:-ms-input-placeholder,
+    #year:focus:-ms-input-placeholder,
+    #accessCode:focus:-ms-input-placeholder { color: transparent; }
+    #firstName:focus::-ms-input-placeholder,
+    #lastName:focus::-ms-input-placeholder,
+    #month:focus::-ms-input-placeholder,
+    #day:focus::-ms-input-placeholder,
+    #year:focus::-ms-input-placeholder,
+    #accessCode:focus::-ms-input-placeholder { color: transparent; }
+</style>
+</head>
+<body>
+
+<!-- Logo Section -->
+<div class="fixed-logo">
+    <img src="https://s3-us-gov-west-1.amazonaws.com/content.www.va.gov/img/2022-03/CDCE%20logo%20JPG.jpg" alt="CDCE Logo">
+</div>
+
+<!-- Login Section -->
+<div class="container" id="loginSection">
+    <div class="login-card">
+        <h1 class="main-title">Volunteer Hours Entry</h2>
+        <div class="content">
+        <h2 class="sub-title">Please complete verification to log hours</h4>
+        <form id="loginForm" novalidate>
+        <div class="form-group">
+            <label for="firstName">First Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="firstName" required maxlength="100" placeholder="Enter your first name" value="Zayan" autocomplete="off" data-toggle="tooltip" data-placement="top" title="Enter first name (letters, apostrophe, hyphen; max 100)">
+            <p class="text-danger error" id="firstNameError">First name is required. Letters, apostrophe or hyphen only.</p>
+        </div>
+        <div class="form-group">
+            <label for="lastName">Last Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="lastName" required maxlength="100" placeholder="Enter your last name" value="Doe" autocomplete="off" data-toggle="tooltip" data-placement="top" title="Enter last name (letters, apostrophe, hyphen; max 100)">
+            <p class="text-danger error" id="lastNameError">Last name is required. Letters, apostrophe or hyphen only.</p>
+        </div>
+        <div class="form-group">
+            <label>Date of Birth <span class="text-danger">*</span></label>
+            <div class="row">
+                <div class="col-xs-3">
+                    <input type="text" class="form-control" id="month" placeholder="MM" required value="01" data-toggle="tooltip" data-placement="top" title="Birth month (01-12)">
+                </div>
+                <div class="col-xs-3">
+                    <input type="text" class="form-control" id="day" placeholder="DD" required value="01" data-toggle="tooltip" data-placement="top" title="Birth day (01-31)">
+                </div>
+                <div class="col-xs-3">
+                    <input type="text" class="form-control" id="year" placeholder="YYYY" required value="2000" data-toggle="tooltip" data-placement="top" title="Birth year (e.g., 2000)">
+                </div>
+            </div>
+            <p class="text-danger error" id="monthError">Month must be between 1 and 12.</p>
+            <p class="text-danger error" id="dayError">Day must be between 1 and 31.</p>
+            <p class="text-danger error" id="yearError">Year must be 4 digits starting from 1900.</p>
+        </div>
+        <div class="form-group">
+            <label for="accessCode">Access Code <span class="text-danger">*</span></label>
+            <input type="password" class="form-control" id="accessCode" required placeholder="7 chars: 4 letters & 3 numbers" maxlength="7" autocomplete="off" data-toggle="tooltip" data-placement="top" title="Exactly 7: 4 letters & 3 digits (any order)">
+            <p class="text-danger error" id="accessCodeError">Access code must be 7 characters containing 4 letters and 3 digits.</p>
+            <p class="alert alert-info" id="accessCodeInfo"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Please contact your local CDCE staff if you need login assistance.</p>
+        </div>
+        <div class="text-right">
+            <button type="submit" class="btn btn-custom" id="loginButton" disabled data-toggle="tooltip" data-placement="top" title="Login when all fields are valid"><span class="glyphicon glyphicon-log-in"></span> Login</button>
+            <button type="reset" class="btn btn-default" id="loginResetButton" data-toggle="tooltip" data-placement="top" title="Clear all entered values"><span class="glyphicon glyphicon-refresh"></span> Reset</button>
+        </div>
+        </form>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Section -->
+<div class="container mt-20 is-hidden" id="welcomeSection">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h2 id="welcomeMessage" class="welcome-header"></h2>
+            <button class="btn btn-custom" id="logoutButton" data-toggle="tooltip" data-placement="top" title="Sign out of your session."><span class="glyphicon glyphicon-log-out"></span> Logout</button>
+        </div>
+        <div class="panel-body">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#timeEntry" data-toggle="tab" data-toggle="tooltip" data-placement="top" title="View and manage today's volunteer hours">Time Entry</a></li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane active" id="timeEntry">
+                    <p class="add-hours-text">Please select 'Add Hours' to enter hours for an assignment.  A meal ticket will be issued if criteria are met.</p>
+                    <button class="btn btn-custom" id="addHours" data-toggle="tooltip" data-placement="top" title="Add volunteer hours for an Assignment"><span class="glyphicon glyphicon-plus"></span> Add Hours</button>
+                    <button type="button" class="btn btn-custom is-hidden" id="editHours" data-toggle="tooltip" data-placement="top" title="Edit the selected entry"><span class="glyphicon glyphicon-edit"></span> Edit Hours</button>
+                    <h4 id="todayHoursHeading" class="mt-20">Today's Hours</h4>
+                    <div class="alert alert-info is-hidden" id="noDataMessage">
+                        <strong>No data found!</strong> You have not logged any hours yet. Click "Add Hours" to get started.
+                    </div>
+                    <table class="table table-bordered hours-table" id="hoursTable">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Assignment</th>
+                                <th>Organization</th>
+                                <th class="text-center hours-type-col">Hours Type</th>
+                                <th class="text-center status-col">Status</th>
+                                <th class="text-right hours-col">Hours</th>
+                                <th class="text-right minutes-col">Minutes</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot id="totalHoursRow" class="is-hidden">
+                            <tr>
+                                <th colspan="6">Total Hours</th>
+                                <th class="text-right" id="totalHours">0.00</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Hours Modal -->
+<div class="modal fade" id="addHoursModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title">Add Hours</h4>
+            </div>
+            <div class="modal-body">
+                <form id="addHoursForm">
+                    <div class="form-group">
+                        <label for="volunteerAssignment">Assignment <span class="text-danger">*</span></label>
+                        <select class="form-control" id="volunteerAssignment" required data-toggle="tooltip" data-placement="top" title="Select the volunteer assignment">
+                            <option value="" disabled selected>Select an assignment</option>
+                            <option value="Event Support">Emotional Support - Lebanon (V92)</option>
+                            <option value="Admin Support">Hospice - Lebanon (V92)</option>
+                            <option value="Community Outreach">Community Outreach - Lebanon (V92)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="organization">Organization <span class="text-danger">*</span></label>
+                        <select class="form-control" id="organization" required data-toggle="tooltip" data-placement="top" title="Select the organization you served">
+                            <option value="" disabled selected>Select an organization</option>
+                            <option value="Red Cross">YMCA Central Maryland</option>
+                            <option value="Local Shelter">Red Cross Youth Services</option>
+                            <option value="Food Bank">225 Air Control Squad</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="hourType">Hour Type <span class="text-danger">*</span></label>
+                        <select class="form-control" id="hourType" required data-toggle="tooltip" data-placement="top" title="Select the type of hours worked">
+                            <option value="" disabled selected>Select hour type</option>
+                            <option value="Regular Time">Regular Time</option>
+                            <option value="Extra Time">Extra Time</option>
+                            <option value="Heavy Duty">Heavy Duty</option>
+                            <option value="Approved Time">Approved Time</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-xs-6">
+                                <label for="hours">Hours <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="hours" min="0" max="23" required placeholder="0-23" data-toggle="tooltip" data-placement="top" title="Enter whole hours (0-23)">
+                            </div>
+                            <div class="col-xs-6">
+                                <label for="minutes">Minutes <span class="text-danger">*</span></label>
+                                <select class="form-control" id="minutes" required data-toggle="tooltip" data-placement="top" title="Select minutes (0,15,30,45)">
+                                    <option value="0" selected>0</option>
+                                    <option value="15">15</option>
+                                    <option value="30">30</option>
+                                    <option value="45">45</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <textarea class="form-control" id="description" rows="3" placeholder="Enter any additional details (optional)" data-toggle="tooltip" data-placement="top" title="Optional description of the work performed"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="resetHoursForm" data-toggle="tooltip" data-placement="top" title="Clear all fields"><span class="glyphicon glyphicon-refresh"></span> Reset</button>
+                <button type="button" class="btn btn-custom" id="saveHours" disabled data-toggle="tooltip" data-placement="top" title="Save this new entry"><span class="glyphicon glyphicon-floppy-disk"></span> Save</button>
+                <button type="button" class="btn btn-custom is-hidden" id="updateHours" data-toggle="tooltip" data-placement="top" title="Update the selected entry"><span class="glyphicon glyphicon-ok"></span> Update</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal" data-toggle="tooltip" data-placement="top" title="Close without saving"><span class="glyphicon glyphicon-remove"></span> Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Timeout Warning Modal -->
+<div class="modal fade session-modal" id="sessionWarningModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Session Expiring</h4>
+            </div>
+            <div class="modal-body">
+                <p>Your session will expire in 20 seconds.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="signoutSession"><span class="glyphicon glyphicon-log-out"></span> Sign out</button>
+                <button type="button" class="btn btn-custom" id="extendSession"><span class="glyphicon glyphicon-time"></span> Extend Logout Time </button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+<!-- Loading Modal -->
+<div class="modal fade loading-modal" id="loadingModal" tabindex="-1" data-backdrop="static" data-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="spinner"></div>
+                <div id="loadingModalText">Loading...</div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+<script>
+$(function(){
+    $('.error').hide();
+    // Initialize tooltips for login form
+    $('[data-toggle="tooltip"]').tooltip({container:'body'});
+
+    // Make placeholders fully disappear (attribute removed) on focus, restored on blur if empty
+    (function(){
+        const ids = ['#firstName','#lastName','#month','#day','#year','#accessCode'];
+        ids.forEach(sel => {
+            const $el = $(sel);
+            if(!$el.length) return;
+            const original = $el.attr('placeholder');
+            $el.data('original-placeholder', original);
+            $el.on('focus', function(){
+                // Remove attribute so screen readers also no longer announce it while editing
+                $(this).attr('placeholder','');
+            });
+            $el.on('blur', function(){
+                if(!this.value.trim()){
+                    $(this).attr('placeholder', $(this).data('original-placeholder') || '');
+                }
+            });
+        });
+    })();
+
+    // Session management
+    const SESSION_DURATION_MS = 300000; // 5 minutes (adjust value or comment as needed)
+    const SESSION_WARNING_OFFSET_MS = 20000; // warn 20s before expiry
+    let sessionWarningTimeoutId = null;
+    let sessionExpireTimeoutId = null;
+    let sessionCountdownIntervalId = null; // NEW: interval id for visible countdown
+
+    function clearSessionTimers(){
+        if(sessionWarningTimeoutId){ clearTimeout(sessionWarningTimeoutId); sessionWarningTimeoutId = null; }
+        if(sessionExpireTimeoutId){ clearTimeout(sessionExpireTimeoutId); sessionExpireTimeoutId = null; }
+        if(sessionCountdownIntervalId){ clearInterval(sessionCountdownIntervalId); sessionCountdownIntervalId = null; }
+    }
+
+    function scheduleSessionTimers(remainingMs = SESSION_DURATION_MS){
+        clearSessionTimers();
+        if (remainingMs <= 0) { handleSessionExpired(); return; }
+        const warnDelay = Math.max(0, remainingMs - SESSION_WARNING_OFFSET_MS);
+        sessionWarningTimeoutId = setTimeout(showSessionWarning, warnDelay);
+        sessionExpireTimeoutId = setTimeout(handleSessionExpired, remainingMs);
+    }
+
+    function showSessionWarning(){
+        // Clear any existing countdown to avoid duplicates
+        if(sessionCountdownIntervalId){ clearInterval(sessionCountdownIntervalId); sessionCountdownIntervalId = null; }
+        const expiry = parseInt(localStorage.getItem('sessionExpiry') || '0', 10);
+        const updateCountdown = () => {
+            const now = Date.now();
+            const remaining = Math.max(0, expiry - now);
+            const secs = Math.ceil(remaining / 1000);
+            $('#sessionWarningModal .modal-body').html(`<p>Your session will expire in <strong>${secs}</strong> second${secs===1?'':'s'}.</p>`);
+            if (remaining <= 0){
+                clearInterval(sessionCountdownIntervalId);
+                sessionCountdownIntervalId = null;
+                handleSessionExpired();
+            }
+        };
+        updateCountdown();
+        $('#sessionWarningModal').modal('show');
+        sessionCountdownIntervalId = setInterval(updateCountdown, 1000);
+    }
+
+    function extendSession(){
+        $('#sessionWarningModal').modal('hide');
+        if(sessionCountdownIntervalId){ clearInterval(sessionCountdownIntervalId); sessionCountdownIntervalId = null; }
+        setSessionExpiryFromNow();
+        scheduleSessionTimers(SESSION_DURATION_MS);
+    }
+
+    function handleSessionExpired(){
+        $('#sessionWarningModal').modal('hide');
+        if(sessionCountdownIntervalId){ clearInterval(sessionCountdownIntervalId); sessionCountdownIntervalId = null; }
+        signoutSession();
+    }
+
+    function signoutSession(){
+        clearSessionTimers();
+        // Ensure the timeout modal is closed
+        $('#sessionWarningModal').modal('hide');
+        if(sessionCountdownIntervalId){ clearInterval(sessionCountdownIntervalId); sessionCountdownIntervalId = null; }
+        $('#loadingModal').modal('hide');
+        // Clear all stored data (including volunteer hours)
+        try { localStorage.clear(); } catch(e) { /* ignore */ }
+        $('#welcomeSection').hide();
+        $('#loginSection').show();
+        // Reset login form fields to blank after auto log off
+        $('#firstName, #lastName, #month, #day, #year, #accessCode').val('');
+        $('.error').hide();
+        $('#loginButton').prop('disabled', true);
+    }
+
+    function setSessionExpiryFromNow(){
+        const expiryTs = Date.now() + SESSION_DURATION_MS;
+        localStorage.setItem('sessionExpiry', String(expiryTs));
+        return expiryTs;
+    }
+
+    function startSession(){
+        const user = { firstName: $('#firstName').val().trim(), lastName: $('#lastName').val().trim() };
+        localStorage.setItem('sessionUser', JSON.stringify(user));
+        const expiryTs = setSessionExpiryFromNow();
+        const remaining = expiryTs - Date.now();
+        scheduleSessionTimers(remaining);
+    }
+
+    function restoreSessionIfActive(){
+        const expiry = parseInt(localStorage.getItem('sessionExpiry') || '0', 10);
+        if (expiry > Date.now()){
+            const userRaw = localStorage.getItem('sessionUser');
+            let user = { firstName: '', lastName: '' };
+            if (userRaw){
+                try { user = JSON.parse(userRaw) || user; } catch(e) { /* ignore */ }
+            }
+            $('#loginSection').hide();
+            $('#welcomeMessage').text(`Welcome ${user.firstName} ${user.lastName}`);
+            $('#welcomeSection').show();
+            loadHoursTable();
+            const remaining = expiry - Date.now();
+            scheduleSessionTimers(remaining);
+        }
+    }
+
+    $('#extendSession').on('click', extendSession);
+    $('#signoutSession').on('click', signoutSession);
+    // Ensure the session modal backdrop sits above other modals
+    $('#sessionWarningModal').on('shown.bs.modal', function(){
+        $('.modal-backdrop').last().addClass('session-backdrop');
+    });
+
+    function validateLogin(){
+        let allValid = true;
+        const nameRegex = /^[A-Za-z'-]{1,100}$/;
+        const firstNameVal = $('#firstName').val().trim();
+        if(!nameRegex.test(firstNameVal)) { $('#firstNameError').show(); allValid = false; } else { $('#firstNameError').hide(); }
+        const lastNameVal = $('#lastName').val().trim();
+        if(!nameRegex.test(lastNameVal)) { $('#lastNameError').show(); allValid = false; } else { $('#lastNameError').hide(); }
+        // DOB validation
+        const monthVal = $('#month').val().trim();
+        const dayVal = $('#day').val().trim();
+        const yearVal = $('#year').val().trim();
+        const monthOk = /^(0?[1-9]|1[0-2])$/.test(monthVal);
+        if(!monthOk){ $('#monthError').text('Month must be between 1 and 12.').show(); allValid = false; } else { $('#monthError').hide(); }
+        const dayOk = /^(0?[1-9]|[12][0-9]|3[01])$/.test(dayVal);
+        if(!dayOk){ $('#dayError').text('Day must be between 1 and 31.').show(); allValid = false; } else { $('#dayError').hide(); }
+        const yearOkFormat = /^(19|20)\d{2}$/.test(yearVal);
+        let yearFinalOk = false;
+        if(yearOkFormat){
+            const currentYear = new Date().getFullYear();
+            const yearNum = parseInt(yearVal,10);
+            yearFinalOk = yearNum >= 1900 && yearNum <= currentYear;
+            if(!yearFinalOk){
+                $('#yearError').text(`Year cannot be in the future (<= ${currentYear}).`).show();
+            }
+        } else {
+            $('#yearError').text('Year must be between 1900 and current year.').show();
+        }
+        if(!yearFinalOk){ allValid = false; } else { $('#yearError').hide(); }
+        // access code: exactly 7 chars, 4 letters 3 digits any order
+        const accessValRaw = $('#accessCode').val();
+        const accessVal = accessValRaw.trim();
+        let accessOk = false;
+        if(accessVal.length === 7){
+            const letters = (accessVal.match(/[A-Za-z]/g) || []).length;
+            const digits = (accessVal.match(/\d/g) || []).length;
+            accessOk = letters === 4 && digits === 3 && /^[A-Za-z0-9]{7}$/.test(accessVal);
+        }
+        if(!accessOk){ $('#accessCodeError').show(); allValid = false; } else { $('#accessCodeError').hide(); }
+        $('#loginButton').prop('disabled', !allValid);
+    }
+    // Filter invalid characters in real-time for names & access code
+    $('#firstName, #lastName').on('input', function(){
+        const cleaned = this.value.replace(/[^A-Za-z'-]/g,'');
+        if(this.value !== cleaned) this.value = cleaned;
+        validateLogin();
+    });
+    $('#accessCode').on('input', function(){
+        let val = this.value.replace(/[^A-Za-z0-9]/g,'');
+        if(val.length > 7) val = val.substring(0,7);
+        // Do not block typing prematurely; allow any mix then validation handles counts
+        this.value = val;
+        validateLogin();
+    });
+    $('#month, #day, #year').on('input', validateLogin);
+    // Custom reset: bypass validation, clear values instead of reverting to defaults
+    $('#loginResetButton').on('click', function(e){
+        e.preventDefault(); // prevent native reset
+        $('#loginForm input').val('');
+        $('.error').hide();
+        $('#loginButton').prop('disabled', true);
+    });
+    // Try to restore session across refresh
+    restoreSessionIfActive();
+    // Ensure initial state reflects any prefilled values
+    validateLogin();
+
+    $('#loginForm').submit(function(e){
+        e.preventDefault();
+        // Show loading dialog for 3 seconds before proceeding
+        $('#loadingModalText').text('Loading...');
+        $('#loadingModal').modal('show');
+        setTimeout(function(){
+            $('#loadingModal').modal('hide');
+            $('#loginSection').hide();
+            $('#welcomeMessage').text(`Welcome ${$('#firstName').val()} ${$('#lastName').val()}`);
+            $('#welcomeSection').show();
+            loadHoursTable();
+            startSession();
+        }, 3000);
+    });
+
+    $('#logoutButton').click(function(){
+        signoutSession();
+    });
+
+    function loadHoursTable(){
+        const stored = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+        const tbody = $('#hoursTable tbody').empty();
+        let total = 0;
+        stored.forEach((row, idx)=>{
+            total += parseInt(row.hours) + parseInt(row.minutes)/60;
+            const disabledAttr = row.approvalStatus === 'Approved'
+                ? 'disabled data-toggle="tooltip" title="Approved time cannot be updated."'
+                : 'data-toggle="tooltip" title="Select to edit the hours"';
+            tbody.append(`<tr data-index="${idx}">
+                <td class="text-center"><input type="checkbox" class="hour-select" value="${idx}" ${disabledAttr}></td>
+                <td>${row.volunteerAssignment}</td>
+                <td>${row.organization}</td>
+                <td class="text-center hours-type-col">${row.hourType || ''}</td>
+                <td class="text-center status-col">${row.approvalStatus || 'Pending'}</td>
+                <td class="text-right hours-col">${row.hours}</td>
+                <td class="text-right minutes-col">${row.minutes}</td>
+            </tr>`);
+        });
+        $('#totalHours').text(total.toFixed(2));
+
+        // Toggle visibility of the table and message
+        const messageElement = $('#noDataMessage');
+        const tableElement = $('#hoursTable');
+
+        if (stored.length === 0) {
+            messageElement.removeClass('is-hidden');
+            tableElement.addClass('is-hidden');
+        } else {
+            messageElement.addClass('is-hidden');
+            tableElement.removeClass('is-hidden');
+        }
+
+        // Initialize tooltips for any disabled checkboxes
+        $('[data-toggle="tooltip"]').tooltip({ container: 'body' });
+
+        // Reset selection UI
+        $('#editHours').addClass('is-hidden');
+        $('#addHours').removeClass('is-hidden');
+        $('.hour-select').off('change').on('change', function(){
+            extendSession();
+            if ($(this).is(':checked')){
+                // enforce single selection
+                $('.hour-select').not(this).prop('checked', false);
+                $('#addHours').addClass('is-hidden');
+                $('#editHours').removeClass('is-hidden');
+                // Reset session on user activity (selection)
+                extendSession();
+            } else {
+                if ($('.hour-select:checked').length === 0){
+                    $('#editHours').addClass('is-hidden');
+                    $('#addHours').removeClass('is-hidden');
+                }
+            }
+        });
+
+        // Clicking anywhere on a row selects it and resets session
+        $('#hoursTable tbody').off('click.rowselect').on('click.rowselect','tr', function(e){
+            // If the direct click was on a checkbox, let the change handler handle it
+            if ($(e.target).is('input.hour-select')) return;
+            const cb = $(this).find('input.hour-select');
+            if (cb.length){
+                if (cb.prop('disabled')){
+                    // Briefly show tooltip to explain why it's disabled
+                    cb.tooltip('show');
+                    setTimeout(function(){ cb.tooltip('hide'); }, 1500);
+                    return;
+                }
+                cb.prop('checked', true).trigger('change');
+                // Reset session on row click
+                extendSession();
+            }
+        });
+    }
+
+    function validateAddHours(){
+        const hasCore = $('#volunteerAssignment').val() && $('#organization').val() && $('#hourType').val();
+        const hoursVal = $('#hours').val();
+        const minutesVal = $('#minutes').val();
+        let numericOk = hoursVal !== "" && minutesVal !== "";
+        let positiveTotal = false;
+        if(numericOk){
+            const h = parseInt(hoursVal,10) || 0;
+            const m = parseInt(minutesVal,10) || 0;
+            positiveTotal = (h + m) > 0; // must be greater than zero
+        }
+        const valid = hasCore && numericOk && positiveTotal;
+        $('#saveHours').prop('disabled', !valid);
+    }
+    $('#addHoursForm select, #addHoursForm input').on('input change', validateAddHours);
+
+    $('#addHours').click(function(){
+        // Reset session on user activity
+        extendSession();
+    $('#addHoursForm')[0].reset();
+    // Set default hour & minutes to 0
+    $('#hours').val('0');
+    $('#minutes').val('0');
+    $('#saveHours').prop('disabled', true);
+        $('#updateHours').addClass('is-hidden');
+        $('#saveHours').removeClass('is-hidden');
+    $('#resetHoursForm').removeClass('is-hidden');
+        $('#addHoursModal .modal-title').text('Add Volunteer Hours');
+    // Enable selects in add mode
+    $('#volunteerAssignment, #organization').prop('disabled', false);
+        $('#addHoursModal').modal('show');
+    // Re-init tooltips inside modal
+    $('#addHoursModal [data-toggle="tooltip"]').tooltip({container:'body'});
+    });
+
+    $('#editHours').click(function(){
+        // Reset session on user activity
+        extendSession();
+        const selected = $('.hour-select:checked').val();
+        if (selected == null) return;
+        const idx = parseInt(selected, 10);
+        const stored = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+        const row = stored[idx];
+        if (!row) return;
+        // Prefill form
+    $('#volunteerAssignment').val(row.volunteerAssignment);
+        $('#organization').val(row.organization);
+    $('#hourType').val(row.hourType || '');
+        $('#hours').val(row.hours);
+        $('#minutes').val(row.minutes);
+        $('#description').val(row.description || '');
+        // Toggle buttons
+    $('#saveHours').addClass('is-hidden');
+    $('#updateHours').removeClass('is-hidden').data('index', idx);
+    $('#saveHours').prop('disabled', false);
+    $('#resetHoursForm').addClass('is-hidden');
+        $('#addHoursModal .modal-title').text('Edit Hours');
+    // Disable selects in edit mode
+    $('#volunteerAssignment, #organization').prop('disabled', true);
+        $('#addHoursModal').modal('show');
+    $('#addHoursModal [data-toggle="tooltip"]').tooltip({container:'body'});
+    });
+
+    $('#saveHours').click(function(){
+        extendSession();
+        // Hide entry modal first, then show loading indicator
+        $('#addHoursModal').modal('hide');
+        $('#addHoursModal').one('hidden.bs.modal', function(){
+            $('#loadingModalText').text('Saving...');
+            $('#loadingModal .modal-content').css('background-color','whitesmoke');
+            $('#loadingModal').modal('show');
+            setTimeout(function(){
+                const entry = {
+                    volunteerAssignment: $('#volunteerAssignment').val(),
+                    organization: $('#organization').val(),
+                    hourType: $('#hourType').val(),
+                    hours: parseInt($('#hours').val()),
+                    minutes: parseInt($('#minutes').val()),
+                    description: $('#description').val().trim(),
+                    timestamp: new Date().toISOString(),
+                    approvalStatus: 'Pending'
+                };
+                const stored = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+                stored.push(entry);
+                localStorage.setItem('volunteerHours', JSON.stringify(stored));
+                $('#loadingModal').modal('hide');
+                loadHoursTable();
+            }, 3000);
+        });
+    });
+
+    $('#updateHours').click(function(){
+        extendSession();
+        const idx = $(this).data('index');
+        if (idx == null) return;
+        $('#addHoursModal').modal('hide');
+        $('#addHoursModal').one('hidden.bs.modal', function(){
+            $('#loadingModalText').text('Updating...');
+            $('#loadingModal .modal-content').css('background-color','whitesmoke');
+            $('#loadingModal').modal('show');
+            setTimeout(function(){
+                const updated = {
+                    volunteerAssignment: $('#volunteerAssignment').val(),
+                    organization: $('#organization').val(),
+                    hourType: $('#hourType').val(),
+                    hours: parseInt($('#hours').val()),
+                    minutes: parseInt($('#minutes').val()),
+                    description: $('#description').val().trim(),
+                    timestamp: new Date().toISOString()
+                };
+                const stored = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+                if (stored[idx]){
+                    updated.approvalStatus = stored[idx].approvalStatus || 'Pending';
+                    stored[idx] = updated;
+                    localStorage.setItem('volunteerHours', JSON.stringify(stored));
+                }
+                $('#loadingModal').modal('hide');
+                loadHoursTable();
+            }, 3000);
+        });
+    });
+
+    // Meal Ticket feature removed; no related handler needed.
+
+    $('#resetHoursForm').click(function(){
+        $('#addHoursForm')[0].reset();
+        $('#saveHours').prop('disabled', true);
+    });
+});
+</script>
+
+</body>
+</html>
