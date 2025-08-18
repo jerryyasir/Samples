@@ -377,15 +377,23 @@ $(function(){
             if(!$el.length) return;
             const original = $el.attr('placeholder');
             $el.data('original-placeholder', original);
-            $el.on('focus', function(){
-                // Remove attribute so screen readers also no longer announce it while editing
-                $(this).attr('placeholder','');
-            });
-            $el.on('blur', function(){
-                if(!this.value.trim()){
-                    $(this).attr('placeholder', $(this).data('original-placeholder') || '');
+            function hidePlaceholder(){
+                // Remove attribute entirely for widest browser / AT consistency
+                if($(this).attr('placeholder') !== undefined){
+                    $(this).data('original-placeholder', $(this).data('original-placeholder') || original);
+                    $(this).removeAttr('placeholder');
                 }
-            });
+            }
+            function restorePlaceholder(){
+                if(!this.value.trim()){
+                    const ph = $(this).data('original-placeholder');
+                    if(ph) $(this).attr('placeholder', ph);
+                }
+            }
+            $el.on('focus', hidePlaceholder);
+            // Some browsers (older) might not fire focus if user clicks but element already focused; ensure click handler too
+            $el.on('click', hidePlaceholder);
+            $el.on('blur', restorePlaceholder);
         });
     })();
 
