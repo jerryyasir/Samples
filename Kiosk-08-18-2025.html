@@ -205,6 +205,12 @@
     #selectFacilityModal.in .modal-dialog { -webkit-transform:translate(-50%, -50%) !important; transform:translate(-50%, -50%) !important; }
     /* Match Select Facility heading font size to confirmation dialog */
     #selectFacilityModal .modal-title { font-size:24px; }
+    /* Meal Ticket modal centered */
+    #mealTicketModal .modal-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:80%; max-width:900px; height:80%; margin:0; }
+    #mealTicketModal .modal-content { height:100%; display:flex; flex-direction:column; }
+    #mealTicketModal .modal-body { flex:1 1 auto; padding:0; }
+    #mealTicketFrame { width:100%; height:100%; border:0; }
+    #mealTicketModal .modal-title { font-size:24px; }
 </style>
 </head>
 <body>
@@ -484,6 +490,25 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- Meal Ticket Modal -->
+    <div class="modal fade" id="mealTicketModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h4 class="modal-title">Meal Ticket</h4>
+                </div>
+                <div class="modal-body">
+                    <iframe id="mealTicketFrame" title="Meal Ticket PDF"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" id="closeMealTicket" data-toggle="tooltip" data-placement="top" title="Close this window"><span class="glyphicon glyphicon-remove"></span> Close</button>
+                    <button type="button" class="btn btn-custom" id="printMealTicketBtn" data-toggle="tooltip" data-placement="top" title="Print the meal ticket"><span class="glyphicon glyphicon-print"></span> Print</button>
+                </div>
+            </div>
+        </div>
     </div>
 
 <script>
@@ -1134,6 +1159,7 @@ $(function(){
                 localStorage.setItem('volunteerHours', JSON.stringify(stored));
                 $('#loadingModal').modal('hide');
                 loadHoursTable();
+                checkAndShowMealTicket(entry);
             }, 3000);
         });
     });
@@ -1166,6 +1192,7 @@ $(function(){
                 }
                 $('#loadingModal').modal('hide');
                 loadHoursTable();
+                // Intentionally NOT calling checkAndShowMealTicket here so Update does not trigger Meal Ticket / print dialog
             }, 3000);
         });
     });
@@ -1179,6 +1206,52 @@ $(function(){
     });
     $('#cancelAddHoursForm').on('click', function(){
         extendSession();
+    });
+
+    // Meal Ticket logic
+    const MEAL_TICKET_PDF_URL = 'https://jerryyasir.github.io/Samples/Meal_Ticket_00269506.pdf';
+    function checkAndShowMealTicket(entry){
+        try {
+            if(entry && entry.printMealTicket === 'Yes' && parseInt(entry.hours,10) === 4){
+                // Load PDF in iframe and show modal
+                $('#mealTicketFrame').attr('src', MEAL_TICKET_PDF_URL);
+                $('#mealTicketModal').modal('show');
+            }
+        } catch(e){ /* ignore */ }
+    }
+    $('#printMealTicketBtn').on('click', function(){
+        extendSession();
+        const pdfUrl = MEAL_TICKET_PDF_URL;
+        const win = window.open(pdfUrl, '_blank');
+        if(!win){
+            // Popup blocked fallback: navigate current tab (last resort)
+            window.location.href = pdfUrl;
+            return;
+        }
+        let printed = false;
+        function attemptPrint(){
+            if(printed) return;
+            printed = true;
+            try { win.focus(); } catch(e){}
+            try { win.print(); } catch(e){}
+            // Give the user a moment; then close the helper window (if allowed)
+            setTimeout(()=>{ try { win.close(); } catch(e){} }, 1500);
+            // Close our modal
+            $('#mealTicketModal').modal('hide');
+        }
+        // Use load event for reliability; also add timeout fallback
+        try {
+            win.addEventListener('load', () => setTimeout(attemptPrint, 300));
+        } catch(e){
+            // Fallback if addEventListener not available
+            setTimeout(attemptPrint, 1000);
+        }
+        // Absolute fallback if load never fires (e.g., PDF viewer delays)
+        setTimeout(attemptPrint, 3000);
+    });
+    $('#closeMealTicket').on('click', function(){
+        extendSession();
+        $('#mealTicketModal').modal('hide');
     });
 });
 </script>
