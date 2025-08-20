@@ -1302,12 +1302,13 @@ $(function(){
     const MEAL_TICKET_PDF_URL = 'https://jerryyasir.github.io/Samples/Meal_Ticket_00269506.pdf';
     function checkAndShowMealTicket(entry){
         try {
-            if(entry && entry.printMealTicket === 'Yes' && parseInt(entry.hours,10) === 4){
+            const enteredHours = (parseInt(entry.hours, 10) || 0) + ((parseInt(entry.minutes, 10) || 0) / 60);
+            if(entry && entry.printMealTicket === 'Yes' && enteredHours > 4){
                 // Load PDF in iframe and show modal
                 $('#mealTicketFrame').attr('src', MEAL_TICKET_PDF_URL);
                 $('#mealTicketModal').modal('show');
             }
-        } catch(e){ /* ignore */ }
+        } catch(e){ console.error("Error in checkAndShowMealTicket:", e); }
     }
     $('#printMealTicketBtn').on('click', function(){
         extendSession();
