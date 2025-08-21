@@ -159,7 +159,7 @@
     #year:focus::-ms-input-placeholder,
     #accessCode:focus::-ms-input-placeholder { color: transparent; }
     /* Facility selection styles */
-    #selectedFacilityInfo { 
+    #selectedFacilityInfo, #volunteerInfoPanel { 
         padding:14px 16px; 
         background-color:#e9f1f8; 
         border:2px solid #001F3F; 
@@ -168,8 +168,8 @@
         box-shadow:0 2px 4px rgba(0,0,0,0.15); 
         transition:background-color .25s ease, box-shadow .25s ease; 
     }
-    #selectedFacilityInfo:hover { background-color:#dbe9f4; box-shadow:0 3px 6px rgba(0,0,0,0.2); }
-    #selectedFacilityInfo .facility-heading { 
+    #selectedFacilityInfo:hover, #volunteerInfoPanel:hover { background-color:#dbe9f4; box-shadow:0 3px 6px rgba(0,0,0,0.2); }
+    #selectedFacilityInfo .facility-heading, #volunteerInfoPanel .facility-heading { 
         margin:0 0 6px 0; 
         font-size:18px; 
         font-weight:600; 
@@ -178,11 +178,17 @@
         align-items:center; 
         gap:6px; 
     }
-    #selectedFacilityInfo .facility-heading .glyphicon { color:#001F3F; }
-    #selectedFacilityInfo .facility-name { font-size:16px; font-weight:600; margin:0 0 4px 0; }
-    #selectedFacilityInfo .facility-address { margin:0 0 2px 0; font-size:14px; }
-    #selectedFacilityInfo .facility-id { margin:0; font-size:12px; color:#333; }
-    #selectedFacilityInfo p { margin:0; }
+    #selectedFacilityInfo .facility-heading .glyphicon, #volunteerInfoPanel .facility-heading .glyphicon { color:#001F3F; }
+    #selectedFacilityInfo .facility-name, #volunteerInfoPanel .facility-name { font-size:16px; font-weight:600; margin:0 0 4px 0; }
+    #selectedFacilityInfo .facility-address, #volunteerInfoPanel .facility-address { margin:0 0 2px 0; font-size:14px; }
+    #selectedFacilityInfo .facility-id, #volunteerInfoPanel .facility-id { margin:0; font-size:12px; color:#333; }
+    #selectedFacilityInfo p, #volunteerInfoPanel p { margin:0; }
+    .meal-heading { margin-top:10px; }
+    /* Volunteer info panel refinements */
+    #volunteerInfoPanel { margin-bottom:15px; }
+    #volunteerInfoPanel .info-row { display:flex; align-items:center; gap:6px; margin:0 0 4px 0; }
+    #volunteerInfoPanel .info-row:last-child { margin-bottom:0; }
+    #volunteerInfoPanel .info-row .glyphicon { color:#001F3F; }
     #facilitySelect { color:#000 !important; }
     .radio-tight { margin-top:0; }
     #printMealTicketGroup { display:flex; flex-wrap:nowrap; gap:28px; align-items:center; }
@@ -360,7 +366,7 @@
                                     <option value="Approved Time">Approved Time</option>
                                 </select>
                             </div>
-                            <div class="col-xs-6">
+                            <div class="col-xs-6" id="printMealTicketContainer">
                                 <label>Print Meal Ticket (If applicable)</label>
                                 <div id="printMealTicketGroup" data-toggle="tooltip" data-placement="top" title="Select Yes if a meal ticket should be printed (if eligible)">
                                     <div class="radio radio-tight">
@@ -420,11 +426,11 @@
             </div>
             <div class="modal-body">
                 <form id="facilitySelectForm">
-                    <div id="volunteerInfoPanel" class="well" style="margin-bottom:15px; display:none;">
-                        <div class="facility-heading" style="margin-top:0;"><span class="glyphicon glyphicon-user"></span> Volunteer Information</div>
-                        <p id="volInfoName" class="facility-name" style="margin:0 0 4px 0;"></p>
-                        <p id="volInfoPrimaryFacility" style="margin:0 0 4px 0;"></p>
-                        <p id="volInfoMealEligible" style="margin:0;"></p>
+                    <div id="volunteerInfoPanel" class="well is-hidden">
+                        <div class="facility-heading"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> Volunteer Information</div>
+                        <p class="info-row facility-name"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> <strong>Name:</strong> <span id="volInfoName"></span></p>
+                        <p class="info-row"><span class="glyphicon glyphicon-home" aria-hidden="true"></span> <strong>Primary Facility:</strong> <span id="volInfoPrimaryFacility"></span></p>
+                        <p class="info-row"><span class="glyphicon glyphicon-cutlery" aria-hidden="true"></span> <strong>Meal Eligible:</strong> <span id="volInfoMealEligible"></span></p>
                     </div>
                     <p class="alert alert-info" id="facilitySelectionInfo">
                         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
@@ -445,7 +451,7 @@
                         <p id="stationNumberLine"></p>
                         <p id="phoneLine"></p>
                         <p id="programManagerLine"></p>
-                        <div class="facility-heading meal-heading" style="margin-top: 10px;"><span class="glyphicon glyphicon-cutlery"></span> Meal Information</div>
+                        <div class="facility-heading meal-heading"><span class="glyphicon glyphicon-cutlery"></span> Meal Information</div>
                         <p id="mealInfoRow1"></p>
                         <p id="mealInfoRow2"></p>
                     </div>
@@ -568,7 +574,7 @@ $(function(){
                         LastName: "Yasir",
                         DateOfBirth: "05/01/2010",
                         AccessCode: "abcd123",
-                        MealEligible: 1,
+                        MealEligible: 0,
                         PrimaryFacility: "Washington DC VA Medical Center"
                     },
                     {
@@ -794,7 +800,7 @@ $(function(){
     })();
 
     // Session management
-    const SESSION_DURATION_MS = 300000; // 5 minutes (adjust value or comment as needed)
+    const SESSION_DURATION_MS = 400000; // 5 minutes (adjust value or comment as needed)
     const SESSION_WARNING_OFFSET_MS = 20000; // warn 20s before expiry
     let sessionWarningTimeoutId = null;
     let sessionExpireTimeoutId = null;
@@ -837,6 +843,11 @@ $(function(){
     function extendSession(){
         $('#sessionWarningModal').modal('hide');
         if(sessionCountdownIntervalId){ clearInterval(sessionCountdownIntervalId); sessionCountdownIntervalId = null; }
+        // Keep selected volunteer persisted when user extends the session
+        if (window.currentVolunteer && window.currentVolunteer.VolunteerId){
+            try { localStorage.setItem('currentVolunteer', JSON.stringify(window.currentVolunteer)); } catch(e) { /* ignore */ }
+            try { sessionStorage.setItem('currentVolunteerId', window.currentVolunteer.VolunteerId); } catch(e) { /* ignore */ }
+        }
         setSessionExpiryFromNow();
         scheduleSessionTimers(SESSION_DURATION_MS);
     }
@@ -855,6 +866,8 @@ $(function(){
         $('#loadingModal').modal('hide');
         // Clear all stored data (including volunteer hours)
         try { localStorage.clear(); } catch(e) { /* ignore */ }
+    try { sessionStorage.removeItem('currentVolunteerId'); } catch(e) { /* ignore */ }
+    try { localStorage.removeItem('currentVolunteer'); } catch(e) { /* ignore */ }
         $('#welcomeSection').hide();
         $('#loginSection').show();
         // Reset login form fields to blank after auto log off
@@ -885,6 +898,20 @@ $(function(){
             if (userRaw){
                 try { user = JSON.parse(userRaw) || user; } catch(e) { /* ignore */ }
             }
+            // Restore current volunteer (keep selected volunteer in session)
+            let restoredVolunteer = null;
+            const cvRaw = localStorage.getItem('currentVolunteer');
+            if (cvRaw){
+                try { restoredVolunteer = JSON.parse(cvRaw); } catch(e) { restoredVolunteer = null; }
+            }
+            if (!restoredVolunteer){
+                const cvId = sessionStorage.getItem('currentVolunteerId');
+                if (cvId){
+                    const v = Volunteers.find(v => v.VolunteerId === cvId);
+                    if (v) restoredVolunteer = v;
+                }
+            }
+            if (restoredVolunteer){ window.currentVolunteer = restoredVolunteer; }
             $('#loginSection').hide();
             $('#welcomeMessage').text(`Welcome ${user.firstName} ${user.lastName}`);
             $('#welcomeSection').show();
@@ -987,9 +1014,10 @@ $(function(){
             });
             return;
         }
-        // Persist selected volunteer in memory + session storage
-        window.currentVolunteer = volunteer;
-        try { sessionStorage.setItem('currentVolunteerId', volunteer.VolunteerId); } catch(e) { /* ignore */ }
+    // Persist selected volunteer in memory + storage
+    window.currentVolunteer = volunteer;
+    try { sessionStorage.setItem('currentVolunteerId', volunteer.VolunteerId); } catch(e) { /* ignore */ }
+    try { localStorage.setItem('currentVolunteer', JSON.stringify(volunteer)); } catch(e) { /* ignore */ }
         // Show loading dialog for 1.5 seconds before proceeding
         $('#loadingModalText').text('Verifying volunteer...');
         $('#loadingModal').modal('show');
@@ -1014,8 +1042,8 @@ $(function(){
             return;
         }
         $('#volInfoName').text(`${vol.FirstName} ${vol.LastName}`);
-        $('#volInfoPrimaryFacility').html(`<strong>Primary Facility:</strong> ${vol.PrimaryFacility}`);
-        $('#volInfoMealEligible').html(`<strong>Meal Eligible:</strong> ${vol.MealEligible}`);
+        $('#volInfoPrimaryFacility').text(vol.PrimaryFacility);
+        $('#volInfoMealEligible').text(vol.MealEligible);
         $('#volunteerInfoPanel').show();
     }
 
@@ -1279,6 +1307,37 @@ $(function(){
     }
     $('#addHoursForm select, #addHoursForm input').on('input change', validateAddHours);
 
+    // Toggle the Print Meal Ticket UI based on facility and volunteer meal allowance
+    function updatePrintMealTicketVisibility(fac){
+        const vol = window.currentVolunteer;
+        const volEligible = vol ? parseInt(vol.MealEligible, 10) : null;
+        const facMeals = fac ? fac.MealsAllowed : null;
+        const bothZero = facMeals === 0 || volEligible === 0;
+
+        if (bothZero) {
+            // Hide the entire container when neither facility nor volunteer allows meals
+            $('#printMealTicketContainer').addClass('is-hidden');
+            // Ensure a safe default
+            $('input[name="printMealTicket"][value="No"]').prop('checked', true);
+            $('input[name="printMealTicket"]').prop('disabled', true);
+            // Remove tooltip artifacts since it's hidden
+            $('#printMealTicketGroup').removeAttr('data-toggle').removeAttr('title').tooltip('destroy');
+        } else {
+            // Show container and apply existing enable/disable rules based on facility only
+            $('#printMealTicketContainer').removeClass('is-hidden');
+            if (fac && fac.MealsAllowed === 0) {
+                $('input[name="printMealTicket"]').prop('disabled', true)
+                    .closest('.radio').parent()
+                    .attr('data-toggle', 'tooltip').attr('title', 'This facility does not allow meals for volunteers.').tooltip('fixTitle');
+                $('input[name="printMealTicket"][value="No"]').prop('checked', true);
+            } else {
+                $('input[name="printMealTicket"]').prop('disabled', false)
+                    .closest('.radio').parent()
+                    .removeAttr('data-toggle').removeAttr('title').tooltip('destroy');
+            }
+        }
+    }
+
     // Change Facility button / confirmation logic
     $('#changeFacilityBtn').on('click', function(){
         extendSession();
@@ -1309,15 +1368,8 @@ $(function(){
         // Reset session on user activity
         extendSession();
         const facilityId = localStorage.getItem('selectedFacilityId');
-        if(facilityId){
-            const fac = Facilities.Facilities.find(f => f.FacilityId === facilityId);
-            if(fac && fac.MealsAllowed === 0){
-                $('input[name="printMealTicket"]').prop('disabled', true).closest('.radio').parent().attr('data-toggle', 'tooltip').attr('title', 'This facility does not allow meals for volunteers.').tooltip('fixTitle');
-                $('input[name="printMealTicket"][value="No"]').prop('checked', true);
-            } else {
-                $('input[name="printMealTicket"]').prop('disabled', false).closest('.radio').parent().removeAttr('data-toggle').removeAttr('title').tooltip('destroy');
-            }
-        }
+        const fac = facilityId ? Facilities.Facilities.find(f => f.FacilityId === facilityId) : null;
+        updatePrintMealTicketVisibility(fac);
     $('#addHoursForm')[0].reset();
     // Set default hour & minutes to 0
     $('#hours').val('0');
@@ -1348,11 +1400,7 @@ $(function(){
         if(facilityId){ 
             populateVolunteerAssignmentsForFacility(facilityId, { includeIds: [ row.volunteerAssignmentId || row.volunteerAssignment ] }); 
             const fac = Facilities.Facilities.find(f => f.FacilityId === facilityId);
-            if(fac && fac.MealsAllowed === 0){
-                $('input[name="printMealTicket"]').prop('disabled', true).closest('.radio').parent().attr('data-toggle', 'tooltip').attr('title', 'This facility does not allow meals for volunteers.').tooltip('fixTitle');
-            } else {
-                $('input[name="printMealTicket"]').prop('disabled', false).closest('.radio').parent().removeAttr('data-toggle').removeAttr('title').tooltip('destroy');
-            }
+            updatePrintMealTicketVisibility(fac);
         }
         // Prefill form
     $('#volunteerAssignment').val(row.volunteerAssignmentId || row.volunteerAssignment);
