@@ -203,6 +203,10 @@
     #selectFacilityModal .modal-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); margin:0; }
     #selectFacilityModal.fade .modal-dialog,
     #selectFacilityModal.in .modal-dialog { -webkit-transform:translate(-50%, -50%) !important; transform:translate(-50%, -50%) !important; }
+    /* Center Invalid Login modal similarly */
+    #invalidLoginModal .modal-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); margin:0; }
+    #invalidLoginModal.fade .modal-dialog,
+    #invalidLoginModal.in .modal-dialog { -webkit-transform:translate(-50%, -50%) !important; transform:translate(-50%, -50%) !important; }
     /* Match Select Facility heading font size to confirmation dialog */
     #selectFacilityModal .modal-title { font-size:24px; }
     /* Meal Ticket modal centered */
@@ -241,13 +245,13 @@
             <label>Date of Birth <span class="text-danger">*</span></label>
             <div class="row">
                 <div class="col-xs-3">
-                    <input type="text" class="form-control" id="month" placeholder="MM" required value="01" data-toggle="tooltip" data-placement="top" title="Birth month (01-12)">
+                    <input type="text" class="form-control" id="month" placeholder="MM" required value="05" data-toggle="tooltip" data-placement="top" title="Birth month (01-12)">
                 </div>
                 <div class="col-xs-3">
                     <input type="text" class="form-control" id="day" placeholder="DD" required value="01" data-toggle="tooltip" data-placement="top" title="Birth day (01-31)">
                 </div>
                 <div class="col-xs-3">
-                    <input type="text" class="form-control" id="year" placeholder="YYYY" required value="2000" data-toggle="tooltip" data-placement="top" title="Birth year (e.g., 2000)">
+                    <input type="text" class="form-control" id="year" placeholder="YYYY" required value="2010" data-toggle="tooltip" data-placement="top" title="Birth year (e.g., 2000)">
                 </div>
             </div>
             <p class="text-danger error" id="monthError">Month must be between 1 and 12.</p>
@@ -416,6 +420,12 @@
             </div>
             <div class="modal-body">
                 <form id="facilitySelectForm">
+                    <div id="volunteerInfoPanel" class="well" style="margin-bottom:15px; display:none;">
+                        <div class="facility-heading" style="margin-top:0;"><span class="glyphicon glyphicon-user"></span> Volunteer Information</div>
+                        <p id="volInfoName" class="facility-name" style="margin:0 0 4px 0;"></p>
+                        <p id="volInfoPrimaryFacility" style="margin:0 0 4px 0;"></p>
+                        <p id="volInfoMealEligible" style="margin:0;"></p>
+                    </div>
                     <p class="alert alert-info" id="facilitySelectionInfo">
                         <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                         You must select a facility before you can enter your hours. All data will be filtered based on the selected facility. You will be able to change the facility later (if needed).
@@ -498,6 +508,24 @@
     </div>
     </div>
 
+    <!-- Invalid Login Modal -->
+    <div class="modal fade" id="invalidLoginModal" tabindex="-1" data-backdrop="static" data-keyboard="false" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Invalid Login Information</h4>
+                </div>
+                <div class="modal-body">
+                    <p>The information provided does not match the volunteer profile in our system. Please contact local IT Staff for more information.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="invalidLoginOk" class="btn btn-custom" data-dismiss="modal"><span class="glyphicon glyphicon-ok"></span> OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Meal Ticket Modal -->
     <div class="modal fade" id="mealTicketModal" tabindex="-1" data-backdrop="static" data-keyboard="false">
         <div class="modal-dialog">
@@ -523,7 +551,83 @@ $(function(){
     // Initialize tooltips for login form
     $('[data-toggle="tooltip"]').tooltip({container:'body'});
 
-    const Facilities = {
+        // Volunteers Array
+        const Volunteers = [
+                    {
+                        VolunteerId: "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+                        FirstName: "John",
+                        LastName: "Doe",
+                        DateOfBirth: "03/15/1988",
+                        AccessCode: "abcd123",
+                        MealEligible: 1,
+                        PrimaryFacility: "Washington DC VA Medical Center"
+                    },
+                    {
+                        VolunteerId: "c1b2c3d4-e5f6-7890-abcd-1234567890ab",
+                        FirstName: "Zayan",
+                        LastName: "Yasir",
+                        DateOfBirth: "05/01/2010",
+                        AccessCode: "abcd123",
+                        MealEligible: 1,
+                        PrimaryFacility: "Washington DC VA Medical Center"
+                    },
+                    {
+                        VolunteerId: "b2c3d4e5-f6a7-8901-bcde-2345678901bc",
+                        FirstName: "Jane",
+                        LastName: "Smith",
+                        DateOfBirth: "07/22/1992",
+                        AccessCode: "wxyz456",
+                        MealEligible: 2,
+                        PrimaryFacility: "Phoenix VA Medical Center"
+                    },
+                    {
+                        VolunteerId: "c3d4e5f6-a7b8-9012-cdef-3456789012cd",
+                        FirstName: "Mary-Anne",
+                        LastName: "Brown",
+                        DateOfBirth: "12/05/1985",
+                        AccessCode: "lmno789",
+                        MealEligible: 0,
+                        PrimaryFacility: "Phoenix VA Medical Center"
+                    },
+                    {
+                        VolunteerId: "d4e5f6a7-b8c9-0123-def0-4567890123de",
+                        FirstName: "Paul-James",
+                        LastName: "White",
+                        DateOfBirth: "09/30/1979",
+                        AccessCode: "qrst234",
+                        MealEligible: 3,
+                        PrimaryFacility: "Washington DC VA Medical Center"
+                    },
+                    {
+                        VolunteerId: "e5f6a7b8-c9d0-1234-ef01-5678901234ef",
+                        FirstName: "Emily",
+                        LastName: "O'Connor",
+                        DateOfBirth: "05/18/1995",
+                        AccessCode: "uvwx567",
+                        MealEligible: 2,
+                        PrimaryFacility: "Phoenix VA Medical Center"
+                    },
+                    {
+                        VolunteerId: "f6a7b8c9-d0e1-2345-f012-6789012345f0",
+                        FirstName: "Lucas",
+                        LastName: "D'Angelo",
+                        DateOfBirth: "11/02/1983",
+                        AccessCode: "yzab890",
+                        MealEligible: 1,
+                        PrimaryFacility: "Washington DC VA Medical Center"
+                    },
+                    {
+                        VolunteerId: "a7b8c9d0-e1f2-3456-0123-789012345601",
+                        FirstName: "Sara",
+                        LastName: "Lee",
+                        DateOfBirth: "08/25/2000",
+                        AccessCode: "cdef345",
+                        MealEligible: 0,
+                        PrimaryFacility: "Phoenix VA Medical Center"
+                    }
+        ];
+        // ...existing code...
+        const Facilities = {
     "Facilities": [
         {
         "FacilityId": "7b7fb5c2-9a5c-4c3d-9f41-3f9f6ef0b6d2",
@@ -865,17 +969,59 @@ $(function(){
 
     $('#loginForm').submit(function(e){
         e.preventDefault();
-        // Show loading dialog for 3 seconds before proceeding
-        $('#loadingModalText').text('Loading...');
+        const firstName = $('#firstName').val().trim();
+        const lastName = $('#lastName').val().trim();
+        const dob = $('#month').val().padStart(2,'0') + '/' + $('#day').val().padStart(2,'0') + '/' + $('#year').val();
+        const accessCode = $('#accessCode').val().trim().toLowerCase();
+        const volunteer = Volunteers.find(v => v.FirstName.toLowerCase() === firstName.toLowerCase()
+            && v.LastName.toLowerCase() === lastName.toLowerCase()
+            && v.DateOfBirth === dob
+            && v.AccessCode === accessCode);
+        if(!volunteer){
+            $('#invalidLoginModal').modal('show');
+            $('#invalidLoginModal').one('shown.bs.modal', function(){
+                $('#invalidLoginOk').focus();
+            });
+            $('#invalidLoginModal').one('hidden.bs.modal', function(){
+                $('#firstName').focus();
+            });
+            return;
+        }
+        // Persist selected volunteer in memory + session storage
+        window.currentVolunteer = volunteer;
+        try { sessionStorage.setItem('currentVolunteerId', volunteer.VolunteerId); } catch(e) { /* ignore */ }
+        // Show loading dialog for 1.5 seconds before proceeding
+        $('#loadingModalText').text('Verifying volunteer...');
         $('#loadingModal').modal('show');
         setTimeout(function(){
             $('#loadingModal').modal('hide');
             $('#loginSection').hide();
             // Prefill facility dropdown and show selection modal
             populateFacilityDropdown();
+            // Populate volunteer info panel
+            populateVolunteerInfoPanel();
             $('#selectFacilityModal').modal('show');
-            startSession(); // start session upon successful auth but before facility selection
-        }, 3000);
+            startSession();
+            // Prepare welcome message base (facility appended after selection)
+            $('#welcomeMessage').text(`Welcome ${volunteer.FirstName} ${volunteer.LastName}`);
+        }, 1500);
+    });
+
+    function populateVolunteerInfoPanel(){
+        const vol = window.currentVolunteer;
+        if(!vol){
+            $('#volunteerInfoPanel').hide();
+            return;
+        }
+        $('#volInfoName').text(`${vol.FirstName} ${vol.LastName}`);
+        $('#volInfoPrimaryFacility').html(`<strong>Primary Facility:</strong> ${vol.PrimaryFacility}`);
+        $('#volInfoMealEligible').html(`<strong>Meal Eligible:</strong> ${vol.MealEligible}`);
+        $('#volunteerInfoPanel').show();
+    }
+
+    // Also repopulate volunteer info when facility modal is reopened (e.g., change facility)
+    $('#selectFacilityModal').on('show.bs.modal', function(){
+        populateVolunteerInfoPanel();
     });
 
     $('#logoutButton').click(function(){
@@ -926,9 +1072,14 @@ $(function(){
         localStorage.setItem('selectedFacilityName', fac.Facility);
         $('#selectFacilityModal').modal('hide');
         // Show welcome section after facility selection
-        $('#welcomeMessage').text(`Welcome ${$('#firstName').val()} ${$('#lastName').val()} - ${fac.Facility}`);
+        const vol = window.currentVolunteer;
+        if(vol){
+            $('#welcomeMessage').text(`Welcome ${vol.FirstName} ${vol.LastName} at ${fac.Facility}`);
+        } else {
+            $('#welcomeMessage').text(`Welcome ${$('#firstName').val()} ${$('#lastName').val()} at ${fac.Facility}`);
+        }
         $('#welcomeSection').show();
-    populateVolunteerAssignmentsForFacility(fac.FacilityId);
+        populateVolunteerAssignmentsForFacility(fac.FacilityId);
         loadHoursTable();
     });
 
