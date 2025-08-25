@@ -183,7 +183,7 @@
     }
     #selectedFacilityInfo:hover, #volunteerInfoPanel:hover, #volunteerInfoSummary:hover { background-color:#dbe9f4; box-shadow:0 3px 6px rgba(0,0,0,0.2); }
     #selectedFacilityInfo .facility-heading, #volunteerInfoPanel .facility-heading, #volunteerInfoSummary .facility-heading { 
-        margin:20px 0 6px 0; 
+        margin:0px 0 6px 0; 
         font-size:18px; 
         font-weight:600; 
         color:#001F3F; 
@@ -191,6 +191,11 @@
         align-items:center; 
         gap:6px; 
     }
+    #selectedFacilityInfo .facility-subheading
+    {
+        margin:20px 0 6px 0; 
+    }
+
     #selectedFacilityInfo .facility-heading .glyphicon, #volunteerInfoPanel .facility-heading .glyphicon, #volunteerInfoSummary .facility-heading .glyphicon { color:#001F3F; }
     #selectedFacilityInfo .facility-name, #volunteerInfoPanel .facility-name, #volunteerInfoSummary .facility-name { font-size:16px; font-weight:600; margin:0 0 4px 0; }
     #selectedFacilityInfo .facility-address, #volunteerInfoPanel .facility-address, #volunteerInfoSummary .facility-address { margin:0 0 2px 0; font-size:14px; }
@@ -470,7 +475,7 @@
                         <p id="stationNumberLine"></p>
                         <p id="phoneLine"></p>
                         <p id="programManagerLine"></p>
-                        <div class="facility-heading meal-heading"><span class="glyphicon glyphicon-cutlery"></span> Meal Information</div>
+                        <div class="facility-heading meal-heading facility-subheading"><span class="glyphicon glyphicon-cutlery"></span> Meal Information</div>
                         <p id="mealInfoRow1"></p>
                         <p id="mealInfoRow2"></p>
                     </div>
@@ -542,7 +547,7 @@
                     <h4 class="modal-title">Invalid Login Information</h4>
                 </div>
                 <div class="modal-body">
-                    <p>The information provided does not match the volunteer profile in our system. Please contact local IT Staff for more information.</p>
+                    <p>The info you provided does not match the info in our system.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" id="invalidLoginOk" class="btn btn-custom" data-dismiss="modal"><span class="glyphicon glyphicon-ok"></span> OK</button>
