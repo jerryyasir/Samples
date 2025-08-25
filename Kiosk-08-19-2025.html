@@ -170,7 +170,7 @@
     }
     #selectedFacilityInfo:hover, #volunteerInfoPanel:hover { background-color:#dbe9f4; box-shadow:0 3px 6px rgba(0,0,0,0.2); }
     #selectedFacilityInfo .facility-heading, #volunteerInfoPanel .facility-heading { 
-        margin:0 0 6px 0; 
+        margin:20px 0 6px 0; 
         font-size:18px; 
         font-weight:600; 
         color:#001F3F; 
@@ -183,7 +183,6 @@
     #selectedFacilityInfo .facility-address, #volunteerInfoPanel .facility-address { margin:0 0 2px 0; font-size:14px; }
     #selectedFacilityInfo .facility-id, #volunteerInfoPanel .facility-id { margin:0; font-size:12px; color:#333; }
     #selectedFacilityInfo p, #volunteerInfoPanel p { margin:0; }
-    .meal-heading { margin-top:10px; }
     /* Volunteer info panel refinements */
     #volunteerInfoPanel { margin-bottom:15px; }
     #volunteerInfoPanel .info-row { display:flex; align-items:center; gap:6px; margin:0 0 4px 0; }
@@ -209,6 +208,8 @@
     #selectFacilityModal .modal-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); margin:0; }
     #selectFacilityModal.fade .modal-dialog,
     #selectFacilityModal.in .modal-dialog { -webkit-transform:translate(-50%, -50%) !important; transform:translate(-50%, -50%) !important; }
+    /* Reduce top padding so Volunteer Information sits closer to header */
+    #selectFacilityModal .modal-body { padding-top: 8px; }
     /* Center Invalid Login modal similarly */
     #invalidLoginModal .modal-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); margin:0; }
     #invalidLoginModal.fade .modal-dialog,

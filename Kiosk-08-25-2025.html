@@ -34,7 +34,20 @@
     .main-title { background-color: #001F3F; color: white; padding: 10px; border-top-left-radius: 4px; border-top-right-radius: 4px; margin-top: 0; margin-bottom: 0; font-size: 32px; font-weight: 400;}
     .sub-title {  color: black; font-size: 20px; font-weight: 400; margin-bottom: 16px;}
     .mt-20 { margin-top: 20px; }
-    .is-hidden { display: none; }
+    /* Element-specific hidden states (replaces deprecated .is-hidden) */
+    .welcome-section-hidden { display: none; }
+    .edit-hours-hidden { display: none; }
+    .no-data-message-hidden { display: none; }
+    .total-hours-row-hidden { display: none; }
+    .update-hours-hidden { display: none; }
+    .volunteer-info-hidden { display: none; }
+    .selected-facility-title-hidden { display: none; }
+    .selected-facility-info-hidden { display: none; }
+    .add-hours-hidden { display: none; }
+    .hours-table-hidden { display: none; }
+    .print-meal-ticket-container-hidden { display: none; }
+    .save-hours-hidden { display: none; }
+    .reset-hours-form-hidden { display: none; }
     .login-card { max-width: 400px; width: 100%; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px; background: whitesmoke; box-shadow: 0 2px 6px rgba(0,0,0,0.05); overflow: hidden; }
     .login-card .content { padding: 0px 15px 15px 15px; }
     .login-card .content h4 { margin-top: 6px; }
@@ -159,7 +172,7 @@
     #year:focus::-ms-input-placeholder,
     #accessCode:focus::-ms-input-placeholder { color: transparent; }
     /* Facility selection styles */
-    #selectedFacilityInfo, #volunteerInfoPanel { 
+    #selectedFacilityInfo, #volunteerInfoPanel, #volunteerInfoSummary { 
         padding:14px 16px; 
         background-color:#e9f1f8; 
         border:2px solid #001F3F; 
@@ -168,9 +181,9 @@
         box-shadow:0 2px 4px rgba(0,0,0,0.15); 
         transition:background-color .25s ease, box-shadow .25s ease; 
     }
-    #selectedFacilityInfo:hover, #volunteerInfoPanel:hover { background-color:#dbe9f4; box-shadow:0 3px 6px rgba(0,0,0,0.2); }
-    #selectedFacilityInfo .facility-heading, #volunteerInfoPanel .facility-heading { 
-        margin:0 0 6px 0; 
+    #selectedFacilityInfo:hover, #volunteerInfoPanel:hover, #volunteerInfoSummary:hover { background-color:#dbe9f4; box-shadow:0 3px 6px rgba(0,0,0,0.2); }
+    #selectedFacilityInfo .facility-heading, #volunteerInfoPanel .facility-heading, #volunteerInfoSummary .facility-heading { 
+        margin:20px 0 6px 0; 
         font-size:18px; 
         font-weight:600; 
         color:#001F3F; 
@@ -178,17 +191,16 @@
         align-items:center; 
         gap:6px; 
     }
-    #selectedFacilityInfo .facility-heading .glyphicon, #volunteerInfoPanel .facility-heading .glyphicon { color:#001F3F; }
-    #selectedFacilityInfo .facility-name, #volunteerInfoPanel .facility-name { font-size:16px; font-weight:600; margin:0 0 4px 0; }
-    #selectedFacilityInfo .facility-address, #volunteerInfoPanel .facility-address { margin:0 0 2px 0; font-size:14px; }
-    #selectedFacilityInfo .facility-id, #volunteerInfoPanel .facility-id { margin:0; font-size:12px; color:#333; }
-    #selectedFacilityInfo p, #volunteerInfoPanel p { margin:0; }
-    .meal-heading { margin-top:10px; }
+    #selectedFacilityInfo .facility-heading .glyphicon, #volunteerInfoPanel .facility-heading .glyphicon, #volunteerInfoSummary .facility-heading .glyphicon { color:#001F3F; }
+    #selectedFacilityInfo .facility-name, #volunteerInfoPanel .facility-name, #volunteerInfoSummary .facility-name { font-size:16px; font-weight:600; margin:0 0 4px 0; }
+    #selectedFacilityInfo .facility-address, #volunteerInfoPanel .facility-address, #volunteerInfoSummary .facility-address { margin:0 0 2px 0; font-size:14px; }
+    #selectedFacilityInfo .facility-id, #volunteerInfoPanel .facility-id, #volunteerInfoSummary .facility-id { margin:0; font-size:12px; color:#333; }
+    #selectedFacilityInfo p, #volunteerInfoPanel p, #volunteerInfoSummary p { margin:0; }
     /* Volunteer info panel refinements */
-    #volunteerInfoPanel { margin-bottom:15px; }
-    #volunteerInfoPanel .info-row { display:flex; align-items:center; gap:6px; margin:0 0 4px 0; }
-    #volunteerInfoPanel .info-row:last-child { margin-bottom:0; }
-    #volunteerInfoPanel .info-row .glyphicon { color:#001F3F; }
+    #volunteerInfoPanel, #volunteerInfoSummary { margin-bottom:15px; }
+    #volunteerInfoPanel .info-row, #volunteerInfoSummary .info-row { display:flex; align-items:center; gap:6px; margin:0 0 4px 0; }
+    #volunteerInfoPanel .info-row:last-child, #volunteerInfoSummary .info-row:last-child { margin-bottom:0; }
+    #volunteerInfoPanel .info-row .glyphicon, #volunteerInfoSummary .info-row .glyphicon { color:#001F3F; }
     #facilitySelect { color:#000 !important; }
     .radio-tight { margin-top:0; }
     #printMealTicketGroup { display:flex; flex-wrap:nowrap; gap:28px; align-items:center; }
@@ -209,6 +221,8 @@
     #selectFacilityModal .modal-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); margin:0; }
     #selectFacilityModal.fade .modal-dialog,
     #selectFacilityModal.in .modal-dialog { -webkit-transform:translate(-50%, -50%) !important; transform:translate(-50%, -50%) !important; }
+    /* Reduce top padding so Volunteer Information sits closer to header */
+    #selectFacilityModal .modal-body { padding-top: 8px; }
     /* Center Invalid Login modal similarly */
     #invalidLoginModal .modal-dialog { position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); margin:0; }
     #invalidLoginModal.fade .modal-dialog,
@@ -280,13 +294,18 @@
 </div>
 
 <!-- Welcome Section -->
-<div class="container mt-20 is-hidden" id="welcomeSection">
+<div class="container mt-20 welcome-section-hidden" id="welcomeSection">
     <div class="panel panel-default">
         <div class="panel-heading">
             <h2 id="welcomeMessage" class="welcome-header"></h2>
             <button class="btn btn-custom" id="logoutButton" data-toggle="tooltip" data-placement="top" title="Sign out of your session."><span class="glyphicon glyphicon-log-out"></span> Logout</button>
         </div>
         <div class="panel-body">
+            <div id="volunteerInfoSummary" class="well volunteer-info-hidden">
+                <p class="info-row"><span class="glyphicon glyphicon-home" aria-hidden="true"></span> <strong>Volunteer Primary Facility:</strong> <span id="volSummaryPrimaryFacility"></span></p>
+                <p class="info-row"><span class="glyphicon glyphicon-cutlery" aria-hidden="true"></span> <strong>Meal Eligible:</strong> <span id="volSummaryMealEligible"></span></p>
+                <p class="info-row"><span class="glyphicon glyphicon-map-marker" aria-hidden="true"></span> <strong>Selected Facility:</strong> <span id="volSummarySelectedFacility"></span></p>
+            </div>
             <div class="clearfix" id="tabsBar">
                 <ul class="nav nav-tabs pull-left">
                     <li class="active"><a href="#timeEntry" data-toggle="tab" data-toggle="tooltip" data-placement="top" title="View and manage today's volunteer hours"><span class="glyphicon glyphicon-time" aria-hidden="true"></span> Time Entry</a></li>
@@ -298,9 +317,9 @@
                     <p class="alert alert-info add-hours-text" id="timeEntryInfo"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Please select 'Add Hours' to enter hours for an assignment. A meal ticket will be issued if criteria are met.</p>
                     <p class="alert alert-info add-hours-text" id="timeEntryInfo"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span> Select checkbox to edit the hours.</p>
                     <button class="btn btn-custom" id="addHours" data-toggle="tooltip" data-placement="top" title="Add volunteer hours for an Assignment"><span class="glyphicon glyphicon-plus"></span> Add Hours</button>
-                    <button type="button" class="btn btn-custom is-hidden" id="editHours" data-toggle="tooltip" data-placement="top" title="Edit the selected entry"><span class="glyphicon glyphicon-edit"></span> Edit Hours</button>
+                    <button type="button" class="btn btn-custom edit-hours-hidden" id="editHours" data-toggle="tooltip" data-placement="top" title="Edit the selected entry"><span class="glyphicon glyphicon-edit"></span> Edit Hours</button>
                     <h4 id="todayHoursHeading" class="mt-20">Today's Hours</h4>
-                    <div class="alert alert-info is-hidden" id="noDataMessage">
+                    <div class="alert alert-info no-data-message-hidden" id="noDataMessage">
                         <strong>No data found!</strong> You have not logged any hours yet. Click "Add Hours" to get started.
                     </div>
                     <table class="table table-bordered hours-table" id="hoursTable">
@@ -316,7 +335,7 @@
                             </tr>
                         </thead>
                         <tbody></tbody>
-                        <tfoot id="totalHoursRow" class="is-hidden">
+                        <tfoot id="totalHoursRow" class="total-hours-row-hidden">
                             <tr>
                                 <th colspan="6">Total Hours</th>
                                 <th class="text-right" id="totalHours">0.00</th>
@@ -409,7 +428,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" id="resetHoursForm" data-toggle="tooltip" data-placement="top" title="Clear all fields"><span class="glyphicon glyphicon-refresh"></span> Reset</button>
                 <button type="button" class="btn btn-custom" id="saveHours" disabled data-toggle="tooltip" data-placement="top" title="Save assignment hours"><span class="glyphicon glyphicon-floppy-disk"></span> Save</button>
-                <button type="button" class="btn btn-custom is-hidden" id="updateHours" data-toggle="tooltip" data-placement="top" title="Update the assignment hours"><span class="glyphicon glyphicon-ok"></span> Update</button>
+                <button type="button" class="btn btn-custom update-hours-hidden" id="updateHours" data-toggle="tooltip" data-placement="top" title="Update the assignment hours"><span class="glyphicon glyphicon-ok"></span> Update</button>
                 <button type="button" class="btn btn-default" id="cancelAddHoursForm" data-dismiss="modal" data-toggle="tooltip" data-placement="top" title="Close window without saving"><span class="glyphicon glyphicon-remove"></span> Cancel</button>
             </div>
         </div>
@@ -426,7 +445,7 @@
             </div>
             <div class="modal-body">
                 <form id="facilitySelectForm">
-                    <div id="volunteerInfoPanel" class="well is-hidden">
+                    <div id="volunteerInfoPanel" class="well volunteer-info-hidden">
                         <div class="facility-heading"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> Volunteer Information</div>
                         <p class="info-row facility-name"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> <strong>Name:</strong> <span id="volInfoName"></span></p>
                         <p class="info-row"><span class="glyphicon glyphicon-home" aria-hidden="true"></span> <strong>Primary Facility:</strong> <span id="volInfoPrimaryFacility"></span></p>
@@ -442,8 +461,8 @@
                             <option value="" disabled selected>Select a facility</option>
                         </select>
                     </div>
-                    <h4 id="selectedFacilityTitle" class="is-hidden">Currently selected facility</h5>
-                    <div id="selectedFacilityInfo" class="well is-hidden">
+                    <h4 id="selectedFacilityTitle" class="selected-facility-title-hidden">Currently selected facility</h5>
+                    <div id="selectedFacilityInfo" class="well selected-facility-info-hidden">
                         <div class="facility-heading"><span class="glyphicon glyphicon-map-marker"></span> Facility Information</div>
                         <p id="facilityNameLine" class="facility-name"></p>
                         <p id="facilityAddressLine" class="facility-address"></p>
@@ -916,6 +935,7 @@ $(function(){
             $('#welcomeMessage').text(`Welcome ${user.firstName} ${user.lastName}`);
             $('#welcomeSection').show();
             loadHoursTable();
+            populateVolunteerInfoSummary();
             const remaining = expiry - Date.now();
             scheduleSessionTimers(remaining);
         }
@@ -1028,6 +1048,8 @@ $(function(){
             populateFacilityDropdown();
             // Populate volunteer info panel
             populateVolunteerInfoPanel();
+            // Update the top summary as soon as we know the volunteer
+            populateVolunteerInfoSummary();
             $('#selectFacilityModal').modal('show');
             startSession();
             // Prepare welcome message base (facility appended after selection)
@@ -1044,7 +1066,24 @@ $(function(){
         $('#volInfoName').text(`${vol.FirstName} ${vol.LastName}`);
         $('#volInfoPrimaryFacility').text(vol.PrimaryFacility);
         $('#volInfoMealEligible').text(vol.MealEligible);
+        
         $('#volunteerInfoPanel').show();
+    }
+
+    // Populate the summary on the Welcome page
+    function populateVolunteerInfoSummary(){
+        const vol = window.currentVolunteer;
+        const $summary = $('#volunteerInfoSummary');
+        if(!vol){
+            $summary.addClass('volunteer-info-hidden');
+            return;
+        }
+        $('#volSummaryName').text(`${vol.FirstName} ${vol.LastName}`);
+        $('#volSummaryPrimaryFacility').text(vol.PrimaryFacility || '');
+        $('#volSummaryMealEligible').text(vol.MealEligible ?? '');
+        const selFac = localStorage.getItem('selectedFacilityName') || '';
+        $('#volSummarySelectedFacility').text(selFac);
+        $summary.removeClass('volunteer-info-hidden');
     }
 
     // Also repopulate volunteer info when facility modal is reopened (e.g., change facility)
@@ -1066,7 +1105,7 @@ $(function(){
             $('<option>').val(f.FacilityId).text(text).appendTo($sel);
         });
         $('#confirmFacility').prop('disabled', true);
-        $('#selectedFacilityInfo').addClass('is-hidden');
+    $('#selectedFacilityInfo').addClass('selected-facility-info-hidden');
     }
 
     $('#facilitySelect').on('change', function(){
@@ -1081,12 +1120,12 @@ $(function(){
             $('#programManagerLine').html(`<span class="glyphicon glyphicon-user" aria-hidden="true"></span> <strong>Program Manager:</strong> ${fac.ProgramManagerSupervisor}`);
             $('#mealInfoRow1').html(`<span class="glyphicon glyphicon-cutlery" aria-hidden="true"></span> <strong>Meals Allowed:</strong> ${fac.MealsAllowed} &nbsp;&nbsp; <span class="glyphicon glyphicon-usd" aria-hidden="true"></span> <strong>Meal Price:</strong> $${fac.MealPrice.toFixed(2)}`);
             $('#mealInfoRow2').html(`<span class="glyphicon glyphicon-time" aria-hidden="true"></span> <strong>Meal Cut Off Time:</strong> ${fac.MealCutOffTime} &nbsp;&nbsp; <span class="glyphicon glyphicon-hourglass" aria-hidden="true"></span> <strong>Required Hours for 1 Meal:</strong> ${fac.RequiredHoursForMeal.toFixed(1)}`);
-            $('#selectedFacilityInfo').removeClass('is-hidden');
-            $('#selectedFacilityTitle').removeClass('is-hidden');
+            $('#selectedFacilityInfo').removeClass('selected-facility-info-hidden');
+            $('#selectedFacilityTitle').removeClass('selected-facility-title-hidden');
             $('#confirmFacility').prop('disabled', false);
         } else {
-            $('#selectedFacilityInfo').addClass('is-hidden');
-            $('#selectedFacilityTitle').addClass('is-hidden');
+            $('#selectedFacilityInfo').addClass('selected-facility-info-hidden');
+            $('#selectedFacilityTitle').addClass('selected-facility-title-hidden');
             $('#confirmFacility').prop('disabled', true);
         }
     });
@@ -1109,6 +1148,8 @@ $(function(){
         $('#welcomeSection').show();
         populateVolunteerAssignmentsForFacility(fac.FacilityId);
         loadHoursTable();
+    // Refresh the summary with the selected facility name
+    populateVolunteerInfoSummary();
     });
 
     $('#cancelFacilitySelect').on('click', function(){
@@ -1200,32 +1241,32 @@ $(function(){
         const tableElement = $('#hoursTable');
 
         if (stored.length === 0) {
-            messageElement.removeClass('is-hidden');
-            tableElement.addClass('is-hidden');
+            messageElement.removeClass('no-data-message-hidden');
+            tableElement.addClass('hours-table-hidden');
         } else {
-            messageElement.addClass('is-hidden');
-            tableElement.removeClass('is-hidden');
+            messageElement.addClass('no-data-message-hidden');
+            tableElement.removeClass('hours-table-hidden');
         }
 
         // Initialize tooltips for any disabled checkboxes
         $('[data-toggle="tooltip"]').tooltip({ container: 'body' });
 
         // Reset selection UI
-        $('#editHours').addClass('is-hidden');
-        $('#addHours').removeClass('is-hidden');
+    $('#editHours').addClass('edit-hours-hidden');
+    $('#addHours').removeClass('add-hours-hidden');
         $('.hour-select').off('change').on('change', function(){
             extendSession();
             if ($(this).is(':checked')){
                 // enforce single selection
                 $('.hour-select').not(this).prop('checked', false);
-                $('#addHours').addClass('is-hidden');
-                $('#editHours').removeClass('is-hidden');
+                $('#addHours').addClass('add-hours-hidden');
+                $('#editHours').removeClass('edit-hours-hidden');
                 // Reset session on user activity (selection)
                 extendSession();
             } else {
                 if ($('.hour-select:checked').length === 0){
-                    $('#editHours').addClass('is-hidden');
-                    $('#addHours').removeClass('is-hidden');
+                    $('#editHours').addClass('edit-hours-hidden');
+                    $('#addHours').removeClass('add-hours-hidden');
                 }
             }
         });
@@ -1316,7 +1357,7 @@ $(function(){
 
         if (bothZero) {
             // Hide the entire container when neither facility nor volunteer allows meals
-            $('#printMealTicketContainer').addClass('is-hidden');
+            $('#printMealTicketContainer').addClass('print-meal-ticket-container-hidden');
             // Ensure a safe default
             $('input[name="printMealTicket"][value="No"]').prop('checked', true);
             $('input[name="printMealTicket"]').prop('disabled', true);
@@ -1324,7 +1365,7 @@ $(function(){
             $('#printMealTicketGroup').removeAttr('data-toggle').removeAttr('title').tooltip('destroy');
         } else {
             // Show container and apply existing enable/disable rules based on facility only
-            $('#printMealTicketContainer').removeClass('is-hidden');
+            $('#printMealTicketContainer').removeClass('print-meal-ticket-container-hidden');
             if (fac && fac.MealsAllowed === 0) {
                 $('input[name="printMealTicket"]').prop('disabled', true)
                     .closest('.radio').parent()
@@ -1353,11 +1394,13 @@ $(function(){
     localStorage.removeItem('volunteerHours');
         populateFacilityDropdown();
         // Reset facility info panel & title
-        $('#selectedFacilityInfo').addClass('is-hidden');
-        $('#selectedFacilityTitle').addClass('is-hidden');
+    $('#selectedFacilityInfo').addClass('selected-facility-info-hidden');
+    $('#selectedFacilityTitle').addClass('selected-facility-title-hidden');
         $('#selectFacilityModal').modal('show');
     // Reflect cleared data immediately in UI
     loadHoursTable();
+    // Clear selected facility in the summary
+    populateVolunteerInfoSummary();
     });
     $('#confirmChangeFacilityNo').on('click', function(){
         extendSession();
@@ -1375,9 +1418,9 @@ $(function(){
     $('#hours').val('0');
     $('#minutes').val('0');
     $('#saveHours').prop('disabled', true);
-        $('#updateHours').addClass('is-hidden');
-        $('#saveHours').removeClass('is-hidden');
-    $('#resetHoursForm').removeClass('is-hidden');
+        $('#updateHours').addClass('update-hours-hidden');
+        $('#saveHours').removeClass('save-hours-hidden');
+    $('#resetHoursForm').removeClass('reset-hours-form-hidden');
         $('#addHoursModal .modal-title').text('Add Volunteer Hours');
     // Enable selects in add mode
     $('#volunteerAssignment, #organization').prop('disabled', false);
@@ -1412,10 +1455,10 @@ $(function(){
     const pm = row.printMealTicket || 'No';
     $(`input[name='printMealTicket'][value='${pm}']`).prop('checked', true);
         // Toggle buttons
-    $('#saveHours').addClass('is-hidden');
-    $('#updateHours').removeClass('is-hidden').data('index', idx);
+    $('#saveHours').addClass('save-hours-hidden');
+    $('#updateHours').removeClass('update-hours-hidden').data('index', idx);
     $('#saveHours').prop('disabled', false);
-    $('#resetHoursForm').addClass('is-hidden');
+    $('#resetHoursForm').addClass('reset-hours-form-hidden');
         $('#addHoursModal .modal-title').text('Edit Hours');
     // Disable selects in edit mode
     $('#volunteerAssignment, #organization').prop('disabled', true);
