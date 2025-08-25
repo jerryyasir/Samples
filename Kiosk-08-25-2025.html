@@ -306,10 +306,15 @@
             <button class="btn btn-custom" id="logoutButton" data-toggle="tooltip" data-placement="top" title="Sign out of your session."><span class="glyphicon glyphicon-log-out"></span> Logout</button>
         </div>
         <div class="panel-body">
+            <div id="selectedFacilityInfoWelcome" class="well" style="background-color:#fffbe6; border:3px solid #001F3F; border-left:12px solid #001F3F; box-shadow:0 4px 12px rgba(0,31,63,0.10); margin-bottom:18px;">
+                <p class="info-row" style="font-size:20px; font-weight:700; color:#001F3F; margin-bottom:8px; text-align:center;">
+                    <span class="glyphicon glyphicon-map-marker" aria-hidden="true" style="font-size:22px; color:#001F3F;"></span>
+                    <strong>Selected Facility:</strong> <span id="volSummarySelectedFacility" style="display:inline-block; text-align:center; min-width:180px;"></span>
+                </p>
+            </div>
             <div id="volunteerInfoSummary" class="well volunteer-info-hidden">
                 <p class="info-row"><span class="glyphicon glyphicon-home" aria-hidden="true"></span> <strong>Volunteer Primary Facility:</strong> <span id="volSummaryPrimaryFacility"></span></p>
                 <p class="info-row"><span class="glyphicon glyphicon-cutlery" aria-hidden="true"></span> <strong>Meal Eligible:</strong> <span id="volSummaryMealEligible"></span></p>
-                <p class="info-row"><span class="glyphicon glyphicon-map-marker" aria-hidden="true"></span> <strong>Selected Facility:</strong> <span id="volSummarySelectedFacility"></span></p>
             </div>
             <div class="clearfix" id="tabsBar">
                 <ul class="nav nav-tabs pull-left">
