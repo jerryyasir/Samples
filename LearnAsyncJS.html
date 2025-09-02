@@ -1,0 +1,286 @@
+<!DOCTYPE html viewport="width=device-width, initial-scale=1.0">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LearnJSJQ</title>
+    <link rel="stylesheet" href="basic-page.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- jQuery UI CSS -->
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+        <!-- jQuery UI JS -->
+        <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+        <style>
+            .cards-container {
+                display: flex;
+                flex-direction: row;
+                gap: 20px;
+                flex-wrap: wrap;
+                margin-top: 20px;
+            }
+            .country-card {
+                background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                width: 220px;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                transition: box-shadow 0.2s;
+                overflow: hidden;
+            }
+            .country-card-large {
+                background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                width: 320px;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                transition: box-shadow 0.2s;
+                overflow: hidden;
+            }
+            .country-card:hover {
+                box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            }
+            .country-img {
+                width: calc(100% - 16px);
+                height: 120px;
+                object-fit: cover;
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+                margin: 8px;
+                margin-bottom: 0;
+            }
+            .country-card h3 {
+                margin: 16px 0 10px 0;
+                font-size: 1.2em;
+                text-align: center;
+            }
+            .country-card p {
+                margin: 4px 0;
+                font-size: 0.98em;
+            }
+            .country-details {
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+        </style>
+</head>
+<body style="background-color: whitesmoke;">
+    <h1>Async Javascript Coding</h1>
+    <input type="number" id="lat" placeholder="Latitude" style="width: 100px;" />
+    <input type="number" id="long" placeholder="Longitude" style="width: 100px;" />
+    <button id="btn" class=".btn-country" type="button">Get Countries</button>
+    <div id="countries" class="cards-container"></div>
+</body>
+<script>
+
+    function getCountry(country) {
+        const request = new XMLHttpRequest();
+        const requestUri = `https://restcountries.com/v3.1/name/${country}`;
+        console.log(requestUri);
+        request.open('GET', requestUri);
+        request.send();
+
+        request.addEventListener('load', function() {
+            
+            const data = JSON.parse(this.responseText);
+            console.log(data);
+            const html = `
+                <div class="country-card">
+                    <img class="country-img" src="${data[0].flags.png}" alt="${data[0].name.common} flag" />
+                    <div class="country-details">
+                        <h3>${data[0].name.common}</h3>
+                        <p><strong>Region:</strong> ${data[0].region}</p>
+                        <p><strong>Subregion:</strong> ${data[0].subregion || "N/A"}</p>
+                        <p><strong>Capital:</strong> ${data[0].capital ? data[0].capital[0] : "N/A"}</p>
+                        <p><strong>Population:</strong> ${Math.round(data[0].population / 1000000, 2)} Million</p>
+                        <p><strong>Language:</strong> ${Object.values(data[0].languages)[0]}</p>
+                        <p><strong>Currency:</strong> ${Object.values(data[0].currencies)[0].name} - ${Object.values(data[0].currencies)[0].symbol}</p>
+                        <p><strong>Timezones:</strong> ${data[0].timezones.join(", ")}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('countries').insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    function getCountryAndNeighbour(country) {
+        const request = new XMLHttpRequest();
+        const requestUri = `https://restcountries.com/v3.1/name/${country}`;
+        request.open('GET', requestUri);
+        request.send();
+
+        request.addEventListener('load', function() {
+            
+            const data = JSON.parse(this.responseText);
+            console.log(data);
+            var neighbours = data[0].borders;
+            console.log(neighbours);
+            if(!neighbours) return;
+            neighbours.forEach(country => {
+                getCountry(country);    
+            });
+            
+            const html = `
+                <div class="country-card-large">
+                    <img class="country-img" src="${data[0].flags.png}" alt="${data[0].name.common} flag" />
+                    <div class="country-details">
+                        <h3>${data[0].name.common}</h3>
+                        <p><strong>Region:</strong> ${data[0].region}</p>
+                        <p><strong>Subregion:</strong> ${data[0].subregion || "N/A"}</p>
+                        <p><strong>Capital:</strong> ${data[0].capital ? data[0].capital[0] : "N/A"}</p>
+                        <p><strong>Population:</strong> ${Math.round(data[0].population / 1000000, 2)} Million</p>
+                        <p><strong>Language:</strong> ${Object.values(data[0].languages)[0]}</p>
+                        <p><strong>Currency:</strong> ${Object.values(data[0].currencies)[0].name} - ${Object.values(data[0].currencies)[0].symbol}</p>
+                        <p><strong>Timezones:</strong> ${data[0].timezones.join(", ")}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('countries').insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    const getCountryData = function(country) {
+        console.log(Date.now());
+        fetch(`https://restcountries.com/v3.1/name/${country}`)
+            .then(function(response){
+                return response.json();
+            }).then(function(data){
+                console.log(data);
+                getCountryAndNeighbour(data[0].name.common);
+            });
+        console.log(Date.now());
+    }
+
+    const getCountryDataBetter = function(country) {
+        console.log(Date.now());
+        fetch(`https://restcountries.com/v3.1/name/${country}`)
+            .then(response => response.json())
+            .then(data => getCountryAndNeighbour(data[0].name.common));            
+        console.log(Date.now());
+    }
+    const getCountryDataWithChaining = function(country) {
+        console.log(Date.now());
+        fetch(`https://restcountries.com/v3.1/name/${country}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                getCountry(data[0].name.common);
+                const neighbours = data[0].borders[0];
+                if(!neighbours) return;
+                return fetch(`https://restcountries.com/v3.1/alpha/${neighbours}`);
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                getCountry(data[0].name.common);
+            });
+        console.log(Date.now());
+    }
+
+    const getJsonResponse = function (url, error = "Something went wrong"){
+        return fetch(url)
+            .then(r => {
+                if(!r.ok) throw new Error(`${error} (⛔️⛔️⛔️) (${r.status})`);
+          //      if(!r.OK) throw new Error(`${error} (⛔️⛔️⛔️) (${r.status})`);
+                
+                return r.json();
+            });
+    };
+
+    const chainingPromises = function(country) {
+        getJsonResponse(`https://restcountries.com/v3.1/name/${country}`, 'Country not found.')
+           .then(data => {
+                console.log(data);
+                getCountry(data[0].name.common)
+                 const neighbour = data[0].borders[0];
+                 console.log(neighbour);
+                 if(!neighbour) return;
+                return getJsonResponse(`https://restcountries.com/v3.1/name/${neighbour}`, 'Country not found.')
+            })
+            .then(data => {
+                console.log(data);
+                getCountry(data[0].name.common)
+            })
+            .catch(err => console.log(`${err.message} ❌❌❌`));
+    };
+    //getCountryData('pakistan');
+    console.log('Test Start');
+
+    const getGeoData = function(lat, long){
+        const data = fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&logitude=${long}}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            console.log(data.city);
+            const administratives = data.localityInfo.administrative;
+            console.log(administratives);
+            if(!administratives) return;
+            administratives.forEach(admin => {
+                console.log(admin.name);
+            });
+        });
+    }
+
+    const getGeoDataAsync = async function(lat, long) {
+        var requestUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&logitude=${long}}`;
+        const response = await fetch(requestUrl);
+        const data = await response.json();
+        console.log(data)
+        const administratives = data.localityInfo.administrative;
+        console.log(administratives);
+        if(!administratives) return;
+        administratives.forEach(admin => {
+            console.log(admin.name);
+        });
+    }
+
+    const getCountryInfo = async function(country) {
+        try {
+            var requestUrl = `https://restcountries.com/v3.1/name/${country}`;
+            const response =  await fetch(requestUrl);
+            if(!response.ok) throw new Error(`Country not found. (⛔️⛔️⛔️) (${response.status})`);   
+            const countryInfo = await response.json();
+            return countryInfo;
+        } catch (error) {
+            console.log(error.message);
+            throw error;
+        }
+    };
+
+    const getMultipleCountries = async function(c1, c2, c3) {
+        try {
+            const data = await Promise.all([
+                getCountryInfo(c1),
+                getCountryInfo(c2),
+                getCountryInfo(c3)
+            ]);
+            console.log(data.map(c => c[0].region));
+        } catch (error) {
+            console.log(error.message);
+        }
+    };
+    
+    const btn = document.getElementById('btn');
+    btn.addEventListener('click', function() {
+        //chainingPromises('pakistan')
+        //const lat = document.getElementById('lat');
+        //const long = document.getElementById('long');
+        //getGeoData(lat.value, long.value);
+        //getGeoDataAsync(lat.value, long.value); 
+        console.log("1....");
+        //const country = getCountryInfo('pakistan');
+        //console.log(country);
+        getCountryInfo('pakista')
+        .then(country => console.log(country));
+        console.log("2....");
+
+        getMultipleCountries('pakistan', 'canada', 'australia');
+
+
+    });
+    
+</script>
