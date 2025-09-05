@@ -1,0 +1,78 @@
+<!DOCTYPE html viewport="width=device-width, initial-scale=1.0">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LearnJSJQ</title>
+    <link rel="stylesheet" href="basic-page.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- jQuery UI CSS -->
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+        <!-- jQuery UI JS -->
+        <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+        <style>
+            .cards-container {
+                display: flex;
+                flex-direction: row;
+                gap: 20px;
+                flex-wrap: wrap;
+                margin-top: 20px;
+            }
+            .country-card {
+                background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                width: 220px;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                transition: box-shadow 0.2s;
+                overflow: hidden;
+            }
+            .country-card-large {
+                background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                width: 320px;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                transition: box-shadow 0.2s;
+                overflow: hidden;
+            }
+            .country-card:hover {
+                box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            }
+            .country-img {
+                width: calc(100% - 16px);
+                height: 120px;
+                object-fit: cover;
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+                margin: 8px;
+                margin-bottom: 0;
+            }
+            .country-card h3 {
+                margin: 16px 0 10px 0;
+                font-size: 1.2em;
+                text-align: center;
+            }
+            .country-card p {
+                margin: 4px 0;
+                font-size: 0.98em;
+            }
+            .country-details {
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+        </style>
+</head>
+<body style="background-color: whitesmoke;">
+    <h1>Object Oriented Javascript Coding</h1>
+    <button id="btn" class=".btn-country" type="button">Do Something</button>
+    <div id="output" class="cards-container"></div>
+</body>
+<script>
+    
+</script>

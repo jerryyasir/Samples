@@ -282,5 +282,80 @@
 
 
     });
+
+    const getCountryInformation = function(country){
+        let requestUri = `https://restcountries.com/v3.1/name/${country}`;
+        return fetch(requestUri)
+            .then(resp => resp.json())
+            .then(data => {
+
+                });
+    }
+
+    const getCountryInfoAsynch = async function(country){
+        let requestUri = `https://restcountries.com/v3.1/name/${country}`;
+        const resp = await fetch(requestUri);
+        const data = await resp.json();
+        return data;
+    };
+    const getCountryInfoAsynchData = async function(country){
+        let requestUri = `https://restcountries.com/v3.1/name/${country}`;
+        const resp = await fetch(requestUri);
+        return await resp.json();
+    };
+    
+    
+
+    const getAllCountries = async function(country){
+        let requestUri = `https://restcountries.com/v3.1/all?fields=name`;
+        const resp = await fetch(requestUri);
+        const data= await resp.json();
+        console.log(typeof(data));
+        data.forEach(c => {
+            const html = `
+                <div class="country-card">
+                    <img class="country-img" src="${c.flags}" alt="${c.name.common} flag" />
+                    <div class="country-details">
+                        <h3>${c.name.common}</h3>
+                        <p><strong>Region:</strong> ${c.region}</p>
+                        <p><strong>Subregion:</strong> ${c.subregion || "N/A"}</p>
+                        <p><strong>Capital:</strong> ${c.capital ? c.capital[0] : "N/A"}</p>
+                        <p><strong>Population:</strong> ${Math.round(c.population / 1000000, 2)} Million</p>
+                        <p><strong>Language:</strong> ${c.languages ? Object.values(c.languages)[0] : "N/A"}</p>
+                        <p><strong>Currency:</strong> ${c.currencies ? Object.values(c.currencies)[0].name + " - " + Object.values(c.currencies)[0].symbol : "N/A"}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('countries').insertAdjacentHTML('beforeend', html);
+        });
+    };
+
+    //getAllCountries();
+
+    Promise.resolve('Test Response').then(x => console.log(x));
+    Promise.reject(new Error('Test Error')).catch(x => console.error(x));
+
+    const lotteryPromise = new Promise(function(resolve, reject) {
+        console.log("Lottery Draw starting");
+        setTimeout(function() {
+            if(Math.random() > 0.5) {
+                resolve('You Win 💰');
+            } else {
+                reject(new Error('You lost your money 💩'));
+            }
+        }, 2000);
+    });
+
+    lotteryPromise.then(x => console.log(x)).catch(err => console.error(err));
+
+    setTimeout(() => {
+        console.log("1")
+    }, 1000);
+
+    setTimeout(() =>{
+        console.log("2")
+    }, 1000)
+
+
     
 </script>

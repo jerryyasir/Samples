@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Meal Ticket Viewer</title>
+    <style>
+        /* Dialog styling */
+        .dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 800px;
+            height: 80%;
+            background: white;
+            border: 2px solid #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            overflow: hidden;
+        }
+        .dialog iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="openPDFDialog()">View and Print Meal Ticket</button>
+    <button onclick="openPDFDialog({previewMs:1500})">Quick Print (1.5s)</button>
+    <button onclick="openPDFDialog({noPreview:true})">Immediate Print</button>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="dialog" id="pdfDialog">
+        <iframe id="pdfFrame"></iframe>
+    </div>
+
+    <script>
+        /**
+         * IMPORTANT BROWSER LIMITATION NOTES (READ FIRST):
+         * 1. True silent printing (no system print dialog) from a normal web page is NOT allowed by browsers for security/privacy reasons.
+         * 2. To actually suppress the dialog you must run the browser in a special mode, e.g.:
+         *    - Chrome / Edge (Chromium) with command line flag: --kiosk-printing (and often --kiosk) OR use an extension / policy.
+         *    - Use an Electron / desktop wrapper, or a signed helper like QZ Tray for controlled device printing.
+         *    - Server‑side printing (send job from backend directly to a printer you control) instead of client printing.
+         * 3. Calling window.print() (or frame.print()) already "clicks" the browser's internal print button. You CANNOT auto‑press the OS dialog's final Print button.
+         * 4. If you embed Mozilla PDF.js you can invoke its internal print programmatically, but OS dialog will still appear unless kiosk mode is active.
+         *
+         * This script:
+         *  - Shows a modal preview (unless noPreview=true)
+         *  - Waits a configurable time
+         *  - Triggers frame print()
+         *  - Closes the modal right after print is initiated (or afterprint event)
+         */
+
+        const ua = navigator.userAgent.toLowerCase();
+        console.log('User Agent:', ua);
+
+        const PDF_URL = 'http://127.0.0.1:5500/Meal_Ticket_00269506.pdf'; // Change to your absolute or relative PDF path
+        const DEFAULT_PREVIEW_MS = 3000; // 3 seconds preview
+
+        function openPDFDialog(opts = {}) {
+            const {
+                previewMs = DEFAULT_PREVIEW_MS,
+                noPreview = false,
+                pdfUrl = PDF_URL,
+                onBeforePrint = () => {},
+                onAfterPrint = () => {}
+            } = opts;
+
+            const dialog = document.getElementById('pdfDialog');
+            const overlay = document.getElementById('overlay');
+            const pdfFrame = document.getElementById('pdfFrame');
+
+            // Load PDF (reassign each time to force load event)
+            pdfFrame.src = pdfUrl;
+
+            // Show UI unless suppressed
+            if (!noPreview) {
+                dialog.style.display = 'block';
+                overlay.style.display = 'block';
+            }
+
+            let printed = false;
+            let printTimer = null;
+
+            pdfFrame.onload = function() {
+                // If no preview requested, print ASAP (next tick) to still count as user gesture chain from button click
+                const delay = noPreview ? 50 : previewMs;
+                printTimer = setTimeout(() => triggerFramePrint(pdfFrame, dialog, overlay, {onBeforePrint, onAfterPrint, noPreview}), delay);
+            };
+
+            pdfFrame.onerror = function() {
+                cleanup('Failed to load PDF.');
+            };
+
+            // afterprint fires after print dialog is closed OR silent print completes (Chrome kiosk)
+            window.addEventListener('afterprint', handleAfterPrintOnce, { once: true });
+
+            function handleAfterPrintOnce(){
+                printed = true;
+                closeDialog(dialog, overlay, pdfFrame);
+                onAfterPrint();
+            }
+
+            function triggerFramePrint(frame, dialogEl, overlayEl, hooks){
+                try {
+                    hooks.onBeforePrint();
+                    // Focus helps some browsers route print to that frame
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                    // If kiosk silent print is enabled, afterprint will close it. If not, we still close immediately to not block UI.
+                    // You may comment out the next line if you prefer to keep the preview visible while dialog is open.
+                    if (!printed && noPreview) {
+                        // For immediate print we can hide right away.
+                        closeDialog(dialogEl, overlayEl, frame);
+                    }
+                } catch (e) {
+                    console.error('Print call failed', e);
+                    cleanup('Unable to initiate print.');
+                }
+            }
+
+            function closeDialog(dialogEl, overlayEl, frame){
+                dialogEl.style.display = 'none';
+                overlayEl.style.display = 'none';
+                // Free the iframe resource to allow re-printing later
+                frame.src = 'about:blank';
+            }
+
+            function cleanup(msg){
+                if (printTimer) clearTimeout(printTimer);
+                console.warn(msg);
+                closeDialog(dialog, overlay, pdfFrame);
+                alert(msg);
+            }
+        }
+
+        // OPTIONAL: Utility to detect (imperfectly) if running with kiosk-printing (Chrome only heuristic)
+        function isLikelyKioskPrinting(){
+            // There is no direct API. Heuristic: Chrome + not in devtools + maybe full screen.
+            const ua = navigator.userAgent.toLowerCase();
+            console.log('User Agent:', ua);
+            console.log('Screen availHeight:', window.screen.availHeight, 'InnerHeight:', window);
+            return ua.includes('chrome') && !ua.includes('edge') && (window.screen.availHeight === window.innerHeight);
+
+        }
+
+        // Expose for console debugging
+        window.isLikelyKioskPrinting = isLikelyKioskPrinting;
+    </script>
+</body>
+</html>
