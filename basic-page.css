@@ -1,0 +1,116 @@
+html, body {
+	width: 100%;
+	height: 100%;
+}
+
+body {
+}
+
+em {
+	font-weight: bold;
+	color: rgb(127, 0, 0);
+}
+
+.row {
+	clear: left;
+	min-height: 100px;
+}
+
+.shape {
+	float: left;
+	border: 2px solid rgb(0, 0, 0);
+	cursor: pointer;
+	color: rgb(255, 255, 255);
+	text-align: center;
+	margin: 5px;
+}
+
+.shape span {
+	float: left;
+	height: 50px;
+	width: 100%;
+	padding-top: 18px;
+	font-size: 14px;
+	font-weight: bold;
+	text-align: center;
+}
+
+.red {
+	background-color: rgb(200, 0, 0);
+}
+
+.green {
+	background-color: rgb(0, 200, 0);
+}
+
+.blue {
+	background-color: rgb(0, 0, 200);
+}
+
+.yellow {
+	background-color: rgb(200, 200, 31);
+}
+
+.rectangle {
+	width: 100px;
+	height: 50px;
+}
+
+.circle {
+	border-radius: 50px;
+	width: 50px;
+	height: 50px;
+}
+
+.square {
+	width: 50px;
+	height: 50px;
+}
+
+.hidden {
+	display: none;
+}
+
+.linebreak-items span {
+	display: block;
+}
+
+#canvas {
+    position: absolute;
+    top:50px;
+    bottom: 50px;
+    left: 50px;
+    right: 50px;
+    margin: auto;
+	background-color: #ccc;
+	border: 2px solid #000;
+}
+.cursor {
+	position: fixed;
+	width: 32px;
+	height: 32px;
+	background-image: url("../img/cursor.png");
+}
+
+.draggable { 
+	width: 300px; 
+	height: 300px; 
+	border: 5px dashed #930; 
+	text-align: center; 
+	display: table-cell; 
+	vertical-align: middle; 
+	color: #930;
+	font-size: 25px;
+	font-weight: bold;
+	cursor: pointer;
+	float: left;
+}
+
+.droppable {
+	float: left;
+	margin-right: 25px;
+}
+
+.padded {
+	padding: 25px;
+}

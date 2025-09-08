@@ -1,0 +1,300 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Time Entry</title>
+    <!-- jQuery and jQuery UI for functionality and dialog -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005ba1;
+        }
+        .error {
+            color: red;
+            display: none;
+            margin-top: 10px;
+        }
+        /* Loading Indicator Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #0078d4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>Update Time Entry</h2>
+    <form id="updateTimeEntryForm">
+        <!-- Hidden field for Time Entry ID (set dynamically or via URL parameter) -->
+        <input type="hidden" id="timeEntryId" name="timeEntryId" value="00000000-0000-0000-0000-000000000000">
+        <!-- Anti-forgery token for Power Pages Web API -->
+        <input type="hidden" name="__RequestVerificationToken" value="{{requestVerificationToken}}">
+        
+        <div class="form-group">
+            <label for="timeType">Time Type</label>
+            <select id="timeType" name="timeType" required>
+                <option value="">Select Time Type</option>
+                <option value="100000000">Regular</option>
+                <option value="100000001">Overtime</option>
+                <option value="100000002">Vacation</option>
+                <!-- Add more options based on your Choice column values -->
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="hours">Hours</label>
+            <input type="number" id="hours" name="hours" step="0.1" min="0" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="4"></textarea>
+        </div>
+        
+        <button type="submit">Update Time Entry</button>
+        <div id="errorMessage" class="error"></div>
+    </form>
+
+    <script>
+        $(document).ready(function () {
+            // Function to show loading indicator
+            function showLoadingIndicator() {
+                const $loading = $('<div class="loading-overlay">' +
+                    '<div class="loading-spinner"></div>' +
+                    '<span class="loading-text">Generating PDF... Please wait.</span>' +
+                    '</div>').appendTo('body');
+                return $loading;
+            }
+
+            // Function to hide loading indicator
+            function hideLoadingIndicator($loading) {
+                $loading.remove();
+            }
+
+            // Function to update Time Entry record using Power Pages Web API
+            function updateTimeEntry(timeEntryId, formData) {
+                return new Promise((resolve, reject) => {
+                    const apiUrl = `/api/data/v9.2/timeentries(${timeEntryId})`;
+
+                    $.ajax({
+                        url: apiUrl,
+                        type: 'PATCH',
+                        contentType: 'application/json',
+                        data: JSON.stringify(formData),
+                        headers: {
+                            'Accept': 'application/json',
+                            'OData-MaxVersion': '4.0',
+                            'OData-Version': '4.0',
+                            'Prefer': 'return=representation',
+                            '__RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function (data) {
+                            resolve(data);
+                        },
+                        error: function (xhr, status, error) {
+                            reject(new Error(`Failed to update Time Entry: ${xhr.responseText || error}`));
+                        }
+                    });
+                });
+            }
+
+            // Function to poll for note with PDF attachment using Power Pages Web API
+            function pollForPDFAttachment(timeEntryId) {
+                return new Promise((resolve, reject) => {
+                    const maxAttempts = 30; // Max attempts to check for PDF
+                    let attempts = 0;
+                    const pollInterval = 2000; // Check every 2 seconds
+
+                    const checkNote = setInterval(function () {
+                        attempts++;
+                        const notesApiUrl = `/api/data/v9.2/annotations?$filter=objectid_timeentryid eq ${timeEntryId} and isdocument eq true&$select=annotationid,filename,documentbody`;
+
+                        $.ajax({
+                            url: notesApiUrl,
+                            type: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'OData-MaxVersion': '4.0',
+                                'OData-Version': '4.0',
+                                '__RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (data) {
+                                if (data.value && data.value.length > 0) {
+                                    const note = data.value[0];
+                                    if (note.filename && note.filename.endsWith('.pdf') && note.documentbody) {
+                                        clearInterval(checkNote);
+                                        resolve(note);
+                                    }
+                                }
+                                if (attempts >= maxAttempts) {
+                                    clearInterval(checkNote);
+                                    reject(new Error('PDF generation timed out'));
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                clearInterval(checkNote);
+                                reject(new Error(`Failed to retrieve note: ${xhr.responseText || error}`));
+                            }
+                        });
+                    }, pollInterval);
+                });
+            }
+
+            // Function to display PDF in a dialog
+            function displayPDF(documentBody) {
+                const byteCharacters = atob(documentBody);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                const pdfUrl = URL.createObjectURL(blob);
+
+                $('<div>').dialog({
+                    modal: true,
+                    width: 800,
+                    height: 600,
+                    title: 'Generated PDF',
+                    open: function () {
+                        $(this).html(`<iframe src="${pdfUrl}" width="100%" height="100%"></iframe>`);
+                    },
+                    close: function () {
+                        URL.revokeObjectURL(pdfUrl);
+                        $(this).dialog('destroy').remove();
+                    },
+                    buttons: {
+                        Close: function () {
+                            $(this).dialog('close');
+                        }
+                    }
+                });
+            }
+
+            // Handle form submission
+            $('#updateTimeEntryForm').submit(function (e) {
+                e.preventDefault();
+                $('#errorMessage').hide();
+
+                // Show loading indicator
+                const $loading = showLoadingIndicator();
+
+                // Get form data
+                const timeEntryId = $('#timeEntryId').val();
+                const formData = {
+                    "timetype": parseInt($('#timeType').val()), // Choice column (OptionSet)
+                    "hours": parseFloat($('#hours').val()), // Float column
+                    "description": $('#description').val() // Text column
+                };
+
+                // Update Time Entry and wait for PDF
+                updateTimeEntry(timeEntryId, formData)
+                    .then(() => pollForPDFAttachment(timeEntryId))
+                    .then(note => {
+                        hideLoadingIndicator($loading);
+                        displayPDF(note.documentbody);
+                    })
+                    .catch(error => {
+                        hideLoadingIndicator($loading);
+                        $('#errorMessage').text('Error: ' + error.message).show();
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

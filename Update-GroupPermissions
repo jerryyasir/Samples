@@ -1,0 +1,98 @@
+# Connect to SharePoint Online
+$siteUrl = "https://tenant.sharepoint.com/sites/JustBasicTeamSite" # Replace with your tenant URL
+$Password = ConvertTo-SecureString "pass@word1" -AsPlainText -Force
+Connect-PnPOnline -Url $siteUrl
+Get-PnPSite
+
+$PLOIGAdmins = "OIGAdmins"
+$PLOOIGOwners = "OIGOwners"
+$PLOIGEdit = "OIGEdit"
+# Get all Microsoft 365 Groups
+$groups = Get-PnPGroup
+
+# Filter groups where title ends with "Admins" or "Owners" and check for OIGAdmin permission
+$result = @()
+foreach ($group in $groups) {
+    #$group = $groups[2]
+    if ($group.Title -like "*Admins" -or $group.Title -like "*Owners") {
+        $PermissionLevels = ""
+        # Get the permissions for the group
+        $groupPermissionLevels = Get-PnPGroupPermissions -Identity $group.Title -ErrorAction SilentlyContinue
+        if ($groupPermissionLevels) {
+            if ($groupPermissionLevels.Count -gt 1) {
+                write-Host "Group: $($group.Title) has multiple permissions"
+                $PermissionLevels = ""
+                foreach ($Perm in $groupPermissionLevels) {
+                    $PermissionName = $Perm.Name
+                    $PermissionName
+                    if ($PermissionName -eq $PLOIGAdmins -or $PermissionName -eq $PLOOIGOwners) {
+                        Write-Host "Group: $($group.Title) has OIGAdmin or OIGOwners permission"
+                        $PermissionLevels+= $PermissionName + "; "
+                    }
+                }
+                $result += [PSCustomObject]@{
+                            GroupId = $group.Id
+                            GroupTitle = $group.Title
+                            SiteUrl    = $siteUrl
+                            Permission = $PermissionLevels.TrimEnd(";")
+                            GroupsCount = $groupPermissionLevels.Count
+                            NewPermission = ""
+                        }
+                
+            }
+            else {
+                write-Host "Group: $($group.Title) has single permission"
+                $PermissionName = $groupPermissionLevels.Name
+                $PermissionName
+                    if ($PermissionName -eq $PLOIGAdmins -or $PermissionName -eq $PLOOIGOwners) {
+                        Write-Host "Group: $($group.Title) has OIGAdmin or OIGOwners permission"
+                        $result += [PSCustomObject]@{
+                            GroupId = $group.Id
+                            GroupTitle = $group.Title
+                            SiteUrl    = $siteUrl
+                            Permission = $PermissionName
+                            GroupsCount = $groupPermissionLevels.Count
+                            NewPermission = ""
+                        }
+                    }
+                }
+            }
+            
+            
+        }
+    }
+
+   If($result.Count -gt 0){
+        foreach($group in $result){
+            #$group = $result[2]
+            Write-Host "Group: $($group.GroupId) - $($group.GroupTitle) has Permission: $($group.Permission)"
+            $groupId = $group.GroupId
+            $spoGroup = $null
+            $spoGroup = Get-PnPGroup -Identity $groupId -ErrorAction SilentlyContinue
+            Set-PnPGroupPermissions -Identity $spoGroup -AddRole $PLOIGEdit -ErrorAction SilentlyContinue
+            #Remove Existing permissions from Group
+            if($group.GroupsCount -gt 1){
+                $existingPermissions = $group.Permission -split ";" 
+                $existingPermissions = $existingPermissions | ForEach-Object { $_.Trim() }
+                foreach($perm in $existingPermissions)
+                {
+                    if($perm.Trim())
+                    {
+                        if($perm -ne $PLOIGEdit){
+                            Set-PnPGroupPermissions -Identity $spoGroup -RemoveRole $perm -ErrorAction SilentlyContinue
+                        }
+                    }    
+                }
+            }
+            else {
+                Set-PnPGroupPermissions -Identity $spoGroup -RemoveRole $group.Permission -ErrorAction SilentlyContinue
+            }
+            
+            $group.NewPermission = $PLOIGEdit
+        }
+
+        $Date = Get-Date -Format "yyyyMMdd_HHmmss"
+        $FileName = 
+        $result | Export-Excel -Path "C:\temp\GroupPermissions-$Date.xlsx" -AutoSize -TableStyle Light1
+   }
+

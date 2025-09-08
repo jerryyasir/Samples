@@ -1,0 +1,99 @@
+<!DOCTYPE html viewport="width=device-width, initial-scale=1.0">
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LearnJSJQ</title>
+    <link rel="stylesheet" href="basic-page.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- jQuery UI CSS -->
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+        <!-- jQuery UI JS -->
+        <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+</head>
+<body>
+    <h1>Learn jQuery</h1>
+    <input type="text" id="date-picker" style="width: 200px;" />
+</body>
+<script>
+    $(document).ready(function() {
+        $("#date-picker").datepicker({
+            numberOfMonths: 2,
+            dateFormat: "d, MM, yy",
+            minDate: new Date(2025, 9, 1),
+            changeMonth: true,
+            changeYear: truecccccv     cx
+        });
+    });
+    // $(document).ready(function() {
+    //     $("#login-button").click(function() {
+    //         $("#login-form").dialog(
+    //             {
+    //                 title: "Login Information", 
+    //                 modal: true, width: 300,
+    //                 close: function(e, ui) {
+    //                     console.log(e);
+    //                     console.log("Dialog closed");
+    //                 },
+    //                 beforeClose: function(e, ui) {
+    //                     console.log("Just before Close")
+    //                 }
+    //             }
+    //         );
+    //     });
+    //     $("#cancel").click(function() {
+    //         $("#login-form").dialog("close");
+    //     });
+    // })
+    // $(document).ready(function() {
+    //     $(".draggable").draggable();
+    //     $(".droppable").droppable({
+    //         drop: function(e, ui) {
+    //             $(this).attr("src", "img/flower-color.png");
+    //             ui.draggable.remove();
+    //         }
+    //     });
+    // });
+    // $(document).ready(function() {
+    //     var startX =0; startY = 0; var endX = 0; var endY = 0;
+    //     $("#canvas").click(function(e) {
+    //         var x = e.pageX;
+    //         $("#output").html("X: " + x);
+    //         if(startX == 0 && startY == 0) {
+    //             startX = x; startY = y;
+    //         }
+    //         else{
+    //             exdX = x; endY = y;
+
+    //         }
+    //     });
+        
+    // });
+    // $(document).ready(function() {
+
+    //     $("[type='checkbox']").change(function() {
+    //         $("#output").html("<p>Selection</p>").append($(":checked").next().clone());
+    //         //alert('Changed');
+
+    //     });
+
+    //     // $(".shape").click(function(e) {
+    //     //     $(e.target).hide();
+    //     //     $("#show-all").show();
+    //     // });
+    //     // $("#show-all").click(function() {
+    //     //     $(".shape").show(1000, function() {
+    //     //         $("#show-all").hide();
+    //     //     });
+    //     // }); 
+    //     //var sharpeCount = 0;
+    //     //$("#add-shape").click(function() {
+    //        // $("#output").append(`<div><span> ${++sharpeCount} </span></div>`);
+    //         //$("#output div:last")
+    //          //   .addClass("shape")
+    //            // .addClass($("#selected-color").val())
+    //             //.addClass($("#selected-shape").val())
+    //     //});
+
+    // });
+</script>
+</html>
