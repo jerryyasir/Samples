@@ -1,13 +1,12 @@
 /**
- * Step 2: Retrieve and Display PDF Attachment in a Dialog with Print Option
- * Uses Power Pages Web API to download a PDF attachment from an annotation's documentbody.
- * Displays the PDF in a Bootstrap modal dialog with a print button.
- * Assumes safeAjax wrapper is included for authenticated AJAX calls.
- * Assumes Bootstrap is available in Power Pages (default in most templates).
+ * Step 2: Retrieve and Display PDF Attachment as Binary Stream
+ * Uses Power Pages Web API to download a PDF attachment from an annotation's documentbody as a binary stream.
+ * Verifies the response is binary (not base64) and displays in a Bootstrap modal with print and download options.
+ * Assumes safeAjax wrapper is included for authenticated AJAX calls and Bootstrap is available.
  */
-var annotationId = "00000000-0000-0000-0000-000000000002"; // Replace with actual annotation GUID
-var metadataUrl = "/api/data/v9.2/annotations(" + annotationId + ")?$select=filename,mimetype";
-var downloadUrl = "/api/data/v9.2/annotations(" + annotationId + ")/documentbody/$value";
+var annotationId = "8ab7a3cd-1a34-6376-9474-24df2fc1a5a7"; // Replace with actual annotation GUID
+var metadataUrl = "/_api/annotations(" + annotationId + ")?$select=filename,mimetype,filesize";
+var downloadUrl = "/_api/annotations(" + annotationId + ")/documentbody/$value";
 
 // Create modal HTML structure dynamically (if not already in page)
 var modalHtml = `
@@ -21,10 +20,12 @@ var modalHtml = `
         </button>
       </div>
       <div class="modal-body">
+        <div id="pdfError" style="display:none;color:red;margin-bottom:10px;"></div>
         <embed id="pdfEmbed" width="100%" height="600px" type="application/pdf">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" onclick="document.getElementById('pdfEmbed').contentWindow.print()">Print PDF</button>
+        <button type="button" class="btn btn-primary" id="printBtn">Print PDF</button>
+        <button type="button" class="btn btn-secondary" id="downloadBtn">Download PDF</button>
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       </div>
     </div>
@@ -37,55 +38,209 @@ if (!document.getElementById("pdfModal")) {
     document.body.insertAdjacentHTML("beforeend", modalHtml);
 }
 
-// Step 2: Fetch metadata and download PDF binary
-safeAjax({
+// Function to check if data is base64 (basic heuristic)
+function isBase64(str) {
+    if (typeof str !== "string") return false;
+    try {
+        return btoa(atob(str)) === str && /^[A-Za-z0-9+/=]+$/.test(str);
+    } catch (e) {
+        return false;
+    }
+}
+
+// Function to convert base64 to Blob
+function base64ToBlob(base64, mimeType) {
+    try {
+        var byteCharacters = atob(base64);
+        var byteNumbers = new Array(byteCharacters.length);
+        for (var i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        var byteArray = new Uint8Array(byteNumbers);
+        return new Blob([byteArray], { type: mimeType });
+    } catch (e) {
+        throw new Error("Failed to decode base64: " + e.message);
+    }
+}
+
+// Step 2: Fetch metadata and download PDF
+webapi.safeAjax({
     type: "GET",
     url: metadataUrl,
     contentType: "application/json",
     success: function (metaData) {
         var filename = metaData.filename || "attachment.pdf"; // Fallback for filename
         var mimetype = metaData.mimetype || "application/pdf"; // Ensure PDF MIME type
+        var filesize = metaData.filesize || 0; // Size in bytes
 
-        // Verify MIME type is PDF
+        // Validate MIME type and file size
         if (mimetype !== "application/pdf") {
-            console.error("Attachment is not a PDF: " + mimetype);
-            alert("Error: Selected attachment is not a PDF file.");
+            document.getElementById("pdfError").style.display = "block";
+            document.getElementById("pdfError").textContent = "Error: Attachment is not a PDF (MIME type: " + mimetype + ").";
+            document.getElementById("pdfEmbed").style.display = "none";
             return;
         }
+        if (filesize > 4194304) { // Warn if file exceeds ~4 MB
+            console.warn("File size (" + filesize + " bytes) may exceed Web API limits.");
+        }
 
-        // Download the binary PDF attachment
-        safeAjax({
+        // Attempt to download as binary stream
+        webapi.safeAjax({
             type: "GET",
             url: downloadUrl,
             contentType: "application/json",
             xhrFields: {
-                responseType: "blob" // Handle binary data
+                responseType: "blob" // Request binary response
             },
-            success: function (blobData, textStatus, jqXHR) {
-                // Create blob URL for PDF
-                var blob = new Blob([blobData], { type: "application/pdf" });
-                var pdfUrl = window.URL.createObjectURL(blob);
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Accept", "application/octet-stream"); // Force binary
+            },
+            success: function (data, textStatus, jqXHR) {
+                var blob;
 
-                // Update modal title and embed source
-                document.querySelector("#pdfModalLabel").textContent = filename;
-                document.getElementById("pdfEmbed").setAttribute("src", pdfUrl);
+                // Check Content-Type header
+                var contentType = jqXHR.getResponseHeader("Content-Type") || "unknown";
+                console.log("Response Content-Type: " + contentType);
 
-                // Show the modal (requires Bootstrap JS)
-                $("#pdfModal").modal("show");
+                // Try reading as text to detect base64
+                var reader = new FileReader();
+                reader.onload = function () {
+                    var text = reader.result;
+                    if (isBase64(text)) {
+                        console.warn("Detected base64 response instead of binary stream.");
+                        try {
+                            blob = base64ToBlob(text, "application/pdf");
+                            console.log("Converted base64 to Blob - size: " + blob.size + " bytes, type: " + blob.type);
+                        } catch (e) {
+                            document.getElementById("pdfError").style.display = "block";
+                            document.getElementById("pdfError").textContent = "Error decoding base64: " + e.message;
+                            document.getElementById("pdfEmbed").style.display = "none";
+                            return;
+                        }
+                    } else {
+                        // Assume binary response
+                        blob = new Blob([data], { type: "application/pdf" });
+                        console.log("Binary stream confirmed - Blob size: " + blob.size + " bytes, type: " + blob.type);
+                    }
 
-                // Clean up blob URL when modal is closed
-                $("#pdfModal").on("hidden.bs.modal", function () {
-                    window.URL.revokeObjectURL(pdfUrl);
-                });
+                    // Validate blob
+                    if (!blob || blob.size === 0) {
+                        document.getElementById("pdfError").style.display = "block";
+                        document.getElementById("pdfError").textContent = "Error: PDF data is empty.";
+                        document.getElementById("pdfEmbed").style.display = "none";
+                        return;
+                    }
+
+                    // Create blob URL for PDF
+                    var pdfUrl = window.URL.createObjectURL(blob);
+
+                    // Update modal title and embed source
+                    document.querySelector("#pdfModalLabel").textContent = filename;
+                    document.getElementById("pdfEmbed").setAttribute("src", pdfUrl);
+                    document.getElementById("pdfEmbed").style.display = "block";
+                    document.getElementById("pdfError").style.display = "none";
+
+                    // Show the modal
+                    $("#pdfModal").modal("show");
+
+                    // Print button functionality
+                    document.getElementById("printBtn").onclick = function () {
+                        var embed = document.getElementById("pdfEmbed");
+                        if (embed.contentWindow) {
+                            embed.contentWindow.print();
+                        } else {
+                            document.getElementById("pdfError").style.display = "block";
+                            document.getElementById("pdfError").textContent = "Error: Unable to access PDF viewer for printing.";
+                        }
+                    };
+
+                    // Download button functionality
+                    document.getElementById("downloadBtn").onclick = function () {
+                        var a = document.createElement("a");
+                        a.href = pdfUrl;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    };
+
+                    // Clean up blob URL when modal is closed
+                    $("#pdfModal").on("hidden.bs.modal", function () {
+                        window.URL.revokeObjectURL(pdfUrl);
+                        document.getElementById("pdfEmbed").removeAttribute("src");
+                        document.getElementById("pdfError").style.display = "none";
+                    });
+                };
+                reader.onerror = function () {
+                    // Binary response (text read fails)
+                    blob = new Blob([data], { type: "application/pdf" });
+                    console.log("Binary stream confirmed - Blob size: " + blob.size + " bytes, type: " + blob.type);
+                    proceedWithBlob(blob);
+                };
+                reader.readAsText(data); // Attempt to read as text to detect base64
             },
             error: function (jqXHR, textStatus, errorThrown) {
-                console.error("Error downloading PDF: ", textStatus, errorThrown);
-                alert("Error downloading PDF attachment: " + errorThrown);
+                console.error("Error downloading PDF: ", textStatus, jqXHR.status, errorThrown);
+                document.getElementById("pdfError").style.display = "block";
+                document.getElementById("pdfError").textContent = "Error downloading PDF: " + (jqXHR.responseJSON?.error?.message || errorThrown);
+                document.getElementById("pdfEmbed").style.display = "none";
             }
         });
     },
     error: function (jqXHR, textStatus, errorThrown) {
-        console.error("Error retrieving metadata: ", textStatus, errorThrown);
-        alert("Error retrieving attachment metadata: " + errorThrown);
+        console.error("Error retrieving metadata: ", textStatus, jqXHR.status, errorThrown);
+        document.getElementById("pdfError").style.display = "block";
+        document.getElementById("pdfError").textContent = "Error retrieving metadata: " + (jqXHR.responseJSON?.error?.message || errorThrown);
+        document.getElementById("pdfEmbed").style.display = "none";
     }
 });
+
+// Helper function to handle blob processing (to avoid code duplication)
+function proceedWithBlob(blob) {
+    var filename = document.querySelector("#pdfModalLabel").textContent || "attachment.pdf";
+    if (!blob || blob.size === 0) {
+        document.getElementById("pdfError").style.display = "block";
+        document.getElementById("pdfError").textContent = "Error: PDF data is empty.";
+        document.getElementById("pdfEmbed").style.display = "none";
+        return;
+    }
+
+    // Create blob URL for PDF
+    var pdfUrl = window.URL.createObjectURL(blob);
+
+    // Update modal title and embed source
+    document.getElementById("pdfEmbed").setAttribute("src", pdfUrl);
+    document.getElementById("pdfEmbed").style.display = "block";
+    document.getElementById("pdfError").style.display = "none";
+
+    // Show the modal
+    $("#pdfModal").modal("show");
+
+    // Print button functionality
+    document.getElementById("printBtn").onclick = function () {
+        var embed = document.getElementById("pdfEmbed");
+        if (embed.contentWindow) {
+            embed.contentWindow.print();
+        } else {
+            document.getElementById("pdfError").style.display = "block";
+            document.getElementById("pdfError").textContent = "Error: Unable to access PDF viewer for printing.";
+        }
+    };
+
+    // Download button functionality
+    document.getElementById("downloadBtn").onclick = function () {
+        var a = document.createElement("a");
+        a.href = pdfUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    // Clean up blob URL when modal is closed
+    $("#pdfModal").on("hidden.bs.modal", function () {
+        window.URL.revokeObjectURL(pdfUrl);
+        document.getElementById("pdfEmbed").removeAttribute("src");
+        document.getElementById("pdfError").style.display = "none";
+    });
+}
