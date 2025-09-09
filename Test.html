@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello World Example</title>
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <meta charset="UTF-8">
+    <title>Hello World Example</title>
+</head>
+<body>
+    <h1>Hello World</h1>
+    <label for="volunteerAssignment">Assignment <span class="text-danger">*</span></label
+            ><select id="volunteerAssignment" required="" data-toggle="tooltip" data-placement="top" title="Select the volunteer assignment" class="form-control">
+            <option value="" disabled="" selected="">Select an assignment</option>
+            </select>
+        </div>
+    <script>
+        console.log('Hello World');
+        const facilityId = "00001000-0000-0001-0000-000000000142";
+        const volunteerAssignmetns = {
+            "Assignments": [
+        {
+            "@odata.etag": "W/\"3057045037\"",
+            "cdcep_name": "Vet Center #210 - General",
+            "_cdcep_benefitingservice_value@OData.Community.Display.V1.FormattedValue": "Vet Center #210 ",
+            "_cdcep_benefitingservice_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_BenefitingService",
+            "_cdcep_benefitingservice_value@Microsoft.Dynamics.CRM.lookuplogicalname": "cdcep_benefitingservice",
+            "_cdcep_benefitingservice_value": "10481000-0000-0001-0000-000000015190",
+            "_cdcep_facilityid_value@OData.Community.Display.V1.FormattedValue": "Philadelphia VAMC",
+            "_cdcep_facilityid_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_FacilityId",
+            "_cdcep_facilityid_value@Microsoft.Dynamics.CRM.lookuplogicalname": "account",
+            "_cdcep_facilityid_value": "00001000-0000-0001-0000-000000000142",
+            "_cdcep_volunteerid_value@OData.Community.Display.V1.FormattedValue": "Jayquan Abadie",
+            "_cdcep_volunteerid_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_VolunteerId",
+            "_cdcep_volunteerid_value@Microsoft.Dynamics.CRM.lookuplogicalname": "contact",
+            "_cdcep_volunteerid_value": "00002000-0002-0000-0000-000000756123",
+            "statecode@OData.Community.Display.V1.FormattedValue": "Active",
+            "statecode": 0,
+            "cdcep_volunteerassignmentid": "f0853d6d-8f35-f011-8c4e-001dd8099a05",
+            "Facility.accountid@OData.Community.Display.V1.AttributeName": "accountid",
+            "Facility.accountid": "00001000-0000-0001-0000-000000000142",
+            "Facility.name@OData.Community.Display.V1.AttributeName": "name",
+            "Facility.name": "Philadelphia VAMC"
+        },
+        {
+            "@odata.etag": "W/\"3062003048\"",
+            "cdcep_name": "Audiology and Speech Pathology - General",
+            "_cdcep_benefitingservice_value@OData.Community.Display.V1.FormattedValue": "Audiology And Speech Pathology ",
+            "_cdcep_benefitingservice_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_BenefitingService",
+            "_cdcep_benefitingservice_value@Microsoft.Dynamics.CRM.lookuplogicalname": "cdcep_benefitingservice",
+            "_cdcep_benefitingservice_value": "10481000-0000-0001-0000-000000000527",
+            "_cdcep_facilityid_value@OData.Community.Display.V1.FormattedValue": "American Lake VA Puget Sound Health Care System (663A4)",
+            "_cdcep_facilityid_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_FacilityId",
+            "_cdcep_facilityid_value@Microsoft.Dynamics.CRM.lookuplogicalname": "account",
+            "_cdcep_facilityid_value": "00001000-0000-0001-0000-000000000212",
+            "_cdcep_volunteerid_value@OData.Community.Display.V1.FormattedValue": "Jayquan Abadie",
+            "_cdcep_volunteerid_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_VolunteerId",
+            "_cdcep_volunteerid_value@Microsoft.Dynamics.CRM.lookuplogicalname": "contact",
+            "_cdcep_volunteerid_value": "00002000-0002-0000-0000-000000756123",
+            "statecode@OData.Community.Display.V1.FormattedValue": "Active",
+            "statecode": 0,
+            "cdcep_volunteerassignmentid": "1e2d2998-2a7d-f011-b4cc-001dd809c1d5",
+            "Facility.accountid@OData.Community.Display.V1.AttributeName": "accountid",
+            "Facility.accountid": "00001000-0000-0001-0000-000000000212",
+            "Facility.name@OData.Community.Display.V1.AttributeName": "name",
+            "Facility.name": "American Lake VA Puget Sound Health Care System (663A4)"
+        },
+        {
+            "@odata.etag": "W/\"3062237434\"",
+            "cdcep_name": "Acquisition and Material Management - General",
+            "_cdcep_benefitingservice_value@OData.Community.Display.V1.FormattedValue": "Acquisition And Material Management ",
+            "_cdcep_benefitingservice_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_BenefitingService",
+            "_cdcep_benefitingservice_value@Microsoft.Dynamics.CRM.lookuplogicalname": "cdcep_benefitingservice",
+            "_cdcep_benefitingservice_value": "10481000-0000-0001-0000-000000022898",
+            "_cdcep_facilityid_value@OData.Community.Display.V1.FormattedValue": "American Lake VA Puget Sound Health Care System (663A4)",
+            "_cdcep_facilityid_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_FacilityId",
+            "_cdcep_facilityid_value@Microsoft.Dynamics.CRM.lookuplogicalname": "account",
+            "_cdcep_facilityid_value": "00001000-0000-0001-0000-000000000212",
+            "_cdcep_volunteerid_value@OData.Community.Display.V1.FormattedValue": "Jayquan Abadie",
+            "_cdcep_volunteerid_value@Microsoft.Dynamics.CRM.associatednavigationproperty": "cdcep_VolunteerId",
+            "_cdcep_volunteerid_value@Microsoft.Dynamics.CRM.lookuplogicalname": "contact",
+            "_cdcep_volunteerid_value": "00002000-0002-0000-0000-000000756123",
+            "statecode@OData.Community.Display.V1.FormattedValue": "Active",
+            "statecode": 0,
+            "cdcep_volunteerassignmentid": "08ce0080-3184-f011-b4cc-001dd809c1d5",
+            "Facility.accountid@OData.Community.Display.V1.AttributeName": "accountid",
+            "Facility.accountid": "00001000-0000-0001-0000-000000000212",
+            "Facility.name@OData.Community.Display.V1.AttributeName": "name",
+            "Facility.name": "American Lake VA Puget Sound Health Care System (663A4)"
+        }
+        ]    };
+        
+        const stored = JSON.parse(localStorage.getItem('volunteerHours')) || [];
+        const usedIds = new Set(stored.map(r => r.volunteerAssignmentId).filter(Boolean));
+        const $assign = $('#volunteerAssignment');
+        //const allvolunteerAssignments =  JSON.parse(sessionStorage.getItem('currentVolunteerAssignments'));
+        
+        const allvolunteerAssignments = volunteerAssignmetns.Assignments;
+        console.table(allvolunteerAssignments);
+        //const allvolunteerAssignments =  JSON.parse(volunteerAssignmetns);
+        console.clear();
+        console.log(facilityId);
+        console.log(allvolunteerAssignments);
+
+        allvolunteerAssignments
+            .filter(a => a["_cdcep_facilityid_value"] === facilityId)
+            .filter(a => !usedIds.has(a.cdcep_volunteerassignmentid) || includeSet.has(a.cdcep_volunteerassignmentid))
+            .forEach(a => {
+                $('<option>').val(a.cdcep_volunteerassignmentid).text(a.cdcep_name).appendTo($assign);
+            });
+        
+        console.log(allvolunteerAssignments);
+
+
+        const prices = [4, 8, 12, 15, 23, 45, 67, 89, 90, 100, 150, 200];
+        const doublePrices = []
+        prices.forEach((price, i, arr) => {
+            doublePrices.push(price * 2);
+        });
+        console.log(doublePrices);
+
+        const doublePricesMap = prices.map(price => price * 2);
+        console.log(prices);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+        console.log(doublePricesMap);
+
+        const AssignmentsById = volunteerAssignmetns.Assignments
+                    .filter(assignment => assignment._cdcep_facilityid_value === facilityId);
+        console.log(AssignmentsById);
+
+    </script>
+</body>
+</html>
