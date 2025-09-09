@@ -1,1 +1,46 @@
-https://volunteerhours-f8hcg2hkbte7e9aw.eastus2-01.azurewebsites.net
+var annotationId = "00000000-0000-0000-0000-000000000002"; // From Step 1
+var downloadUrl = "/api/data/v9.2/annotations(" + annotationId + ")/documentbody/$value";
+
+// First, get metadata to know filename/mimetype (optional but recommended)
+safeAjax({
+    type: "GET",
+    url: "/api/data/v9.2/annotations(" + annotationId + ")?$select=filename,mimetype",
+    contentType: "application/json",
+    success: function (metaData) {
+        var filename = metaData.filename;
+        var mimetype = metaData.mimetype;
+
+        // Now download binary
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", downloadUrl, true);
+        xhr.setRequestHeader("OData-MaxVersion", "4.0");
+        xhr.setRequestHeader("OData-Version", "4.0");
+        xhr.setRequestHeader("Accept", mimetype); // Or "application/octet-stream"
+        xhr.responseType = "blob"; // For binary download
+
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var blob = new Blob([xhr.response], { type: mimetype });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a); // Trigger download
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } else {
+                console.error("Download failed:", xhr.status);
+            }
+        };
+
+        xhr.onerror = function () {
+            console.error("Download error");
+        };
+
+        xhr.send();
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+        console.error("Metadata error:", errorThrown);
+    }
+});
