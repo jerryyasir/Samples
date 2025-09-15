@@ -32,7 +32,7 @@ $excludedLists = @(
 )
 
 # Connect to the SharePoint site
-Connect-PnPOnline -Url $siteUrl -ClientId "c7bf16b8-a2cb-4a5b-8080-b00016bb59ae" -Tenant "77c0f0fc-3049-4c54-a5d5-ff32be8ffd59" -Thumbprint "961A05530B35BF73165BBCA0A90F83D82CF25C24" -Verbose
+
 
 #$web = Get-PnPWeb
 #$subWebs = Get-PnPSubWeb -Recurse
