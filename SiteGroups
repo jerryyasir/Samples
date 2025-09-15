@@ -30,3 +30,12 @@ foreach($Web in $Unique){
         AdminGroup = $AdminGroup.Title
     }
 }
+
+
+
+$Path = "\Test\Test1\Test2\'Test Name' or name with space.pdf"
+
+$FileName = $Path.Split("\")[-1]
+$FileName = $FileName -replace ".*'(.*)'.*",'$1'
+$FileName
+$Ext = $FileName.Split(".")[-1]
