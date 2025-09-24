@@ -1,58 +1,55 @@
-# Import Microsoft Graph module
-Import-Module Microsoft.Graph -Force
+# Import required modules
+Import-Module ExchangeOnlineManagement -Force
+Import-Module MSOnline -Force
 
-# Connect to Microsoft Graph with required scopes
-Write-Host "Connecting to Microsoft Graph..." -ForegroundColor Yellow
-Connect-MgGraph -Scopes "Directory.Read.All", "MailboxSettings.Read" -NoWelcome
+# Connect to Exchange Online (interactive login; supports MFA)
+Write-Host "Connecting to Exchange Online..." -ForegroundColor Yellow
+Connect-ExchangeOnline -ShowBanner:$false
+
+# Connect to Azure AD (for license info; interactive login)
+Write-Host "Connecting to Azure AD..." -ForegroundColor Yellow
+Connect-MsolService
 
 # Initialize report array
 $Report = @()
 
-# Get all users with mailboxes
-Write-Host "Retrieving all mailboxes..." -ForegroundColor Yellow
-$Users = Get-MgUser -All -Property 'id', 'userPrincipalName', 'displayName' -ErrorAction Stop
+# Get all shared mailboxes
+Write-Host "Retrieving all shared mailboxes..." -ForegroundColor Yellow
+$SharedMailboxes = Get-Mailbox -ResultSize Unlimited -RecipientTypeDetails SharedMailbox -ErrorAction Stop
 
-# Process each user to find shared mailboxes
-foreach ($User in $Users) {
+# Process each shared mailbox
+foreach ($Mailbox in $SharedMailboxes) {
     try {
-        # Get mailbox settings to check RecipientTypeDetails
-        $MailboxDetails = Get-MgUserMailboxSetting -UserId $User.Id -ErrorAction SilentlyContinue
-        if ($MailboxDetails.RecipientTypeDetails -eq 'SharedMailbox') {
-            # Get license details
-            $LicenseDetails = Get-MgUserLicenseDetail -UserId $User.Id -ErrorAction SilentlyContinue
-            $LicenseStatus = if ($LicenseDetails) {
-                $AssignedLicenses = $LicenseDetails | ForEach-Object { $_.SkuPartNumber }
-                if ($AssignedLicenses) {
-                    "Licensed: $($AssignedLicenses -join ', ')"
-                } else {
-                    "No licenses assigned"
-                }
-            } else {
-                "No licenses assigned"
-            }
-
-            # Create report object
-            $ReportObject = [PSCustomObject]@{
-                UserPrincipalName = $User.UserPrincipalName
-                DisplayName       = $User.DisplayName
-                MailboxType       = $MailboxDetails.RecipientTypeDetails
-                LicenseStatus     = $LicenseStatus
-                LastChecked       = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-            }
-
-            # Add to report
-            $Report += $ReportObject
-
-            # Output to console
-            Write-Host "Found shared mailbox: $($User.UserPrincipalName), DisplayName: $($User.DisplayName), Licenses: $LicenseStatus" -ForegroundColor Green
+        # Get license details from Azure AD
+        $User = Get-MsolUser -UserPrincipalName $Mailbox.UserPrincipalName -ErrorAction SilentlyContinue
+        $LicenseStatus = if ($User -and $User.IsLicensed) {
+            $Licenses = $User.Licenses | ForEach-Object { $_.AccountSkuId }
+            "Licensed: $($Licenses -join ', ')"
+        } else {
+            "No licenses assigned"
         }
+
+        # Create report object
+        $ReportObject = [PSCustomObject]@{
+            UserPrincipalName = $Mailbox.UserPrincipalName
+            DisplayName       = $Mailbox.DisplayName
+            MailboxType       = $Mailbox.RecipientTypeDetails
+            LicenseStatus     = $LicenseStatus
+            LastChecked       = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+        }
+
+        # Add to report
+        $Report += $ReportObject
+
+        # Output to console
+        Write-Host "Shared mailbox: $($Mailbox.UserPrincipalName), DisplayName: $($Mailbox.DisplayName), Licenses: $LicenseStatus" -ForegroundColor Green
     }
     catch {
-        Write-Warning "Error processing $($User.UserPrincipalName): $($_.Exception.Message)"
+        Write-Warning "Error processing $($Mailbox.UserPrincipalName): $($_.Exception.Message)"
         $Report += [PSCustomObject]@{
-            UserPrincipalName = $User.UserPrincipalName
-            DisplayName       = $User.DisplayName
-            MailboxType       = "Unknown"
+            UserPrincipalName = $Mailbox.UserPrincipalName
+            DisplayName       = $Mailbox.DisplayName
+            MailboxType       = $Mailbox.RecipientTypeDetails
             LicenseStatus     = "Error: $($_.Exception.Message)"
             LastChecked       = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
         }
@@ -63,6 +60,6 @@ foreach ($User in $Users) {
 $CsvPath = "SharedMailboxesReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 $Report | Export-Csv -Path $CsvPath -NoTypeInformation
 
-# Disconnect from Microsoft Graph
-Disconnect-MgGraph -ErrorAction SilentlyContinue
+# Disconnect from Exchange Online
+Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue
 Write-Host "Report exported to $CsvPath in the current directory." -ForegroundColor Yellow
