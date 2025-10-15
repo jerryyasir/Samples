@@ -1,0 +1,29 @@
+// Clear any previous error message
+UpdateContext({ErrorMessage: ""});
+
+// Check for overlapping bookings
+If(
+    CountRows(
+        Filter(
+            RoomBookings,
+            RoomName = RoomDropdown.Selected.Value,
+            StartTime <= EndTimePicker.SelectedDate + Time(Hour(EndTimePicker.SelectedTime), Minute(EndTimePicker.SelectedTime), 0),
+            EndTime >= StartTimePicker.SelectedDate + Time(Hour(StartTimePicker.SelectedTime), Minute(StartTimePicker.SelectedTime), 0)
+        )
+    ) > 0,
+    // If overlap found, set error message
+    UpdateContext({ErrorMessage: "This room is already booked for the selected time."}),
+    // If no overlap, proceed with booking (e.g., submit to SharePoint)
+    Patch(
+        RoomBookings,
+        Defaults(RoomBookings),
+        {
+            RoomName: RoomDropdown.Selected.Value,
+            StartTime: StartTimePicker.SelectedDate + Time(Hour(StartTimePicker.SelectedTime), Minute(StartTimePicker.SelectedTime), 0),
+            EndTime: EndTimePicker.SelectedDate + Time(Hour(EndTimePicker.SelectedTime), Minute(EndTimePicker.SelectedTime), 0)
+        }
+    );
+    // Optionally, reset form or navigate
+    ResetForm(YourFormName);
+    Navigate(SuccessScreen)
+);
